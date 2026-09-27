@@ -26,11 +26,23 @@ Roguelike игра на Python (`pygame-ce`), университетски пр�
   `engine/turn_manager.py`, `engine/world.py`, `engine/camera.py`, `ui/message_log.py`,
   `ui/highscores.py`) **не импортират pygame** – тестват се без прозорец.
 - pygame се използва само в `main.py`, `engine/game.py`, `engine/states.py`,
-  `engine/input_handler.py`, `engine/renderer.py`, `ui/hud.py`, `ui/menus.py`.
+  `engine/input_handler.py`, `engine/renderer.py`, `engine/smoke.py`, `ui/hud.py`,
+  `ui/menus.py`.
+- Модули извън първоначалната схема: `engine/world.py` (логическо състояние),
+  `engine/camera.py`, `engine/smoke.py`, `components/consumable.py`,
+  `components/equippable.py`, `tests/helpers.py`.
+- Нов враг/предмет = нов запис в `config.ENEMIES` / `config.ITEMS` + тегла за спаунване;
+  нов тип AI/ефект = нов клас в `components/ai.py` / `components/consumable.py` и ред във
+  фабриката (`entities/factories.py`).
 - Композиция пред наследяване: `Actor` има компоненти (Fighter, AI, Inventory, Equipment, Level).
 - Command pattern: всяко действие е обект с `perform(world) -> bool`.
 - State pattern: екраните на играта са отделни State класове.
 - Целият random минава през `systems/rng.py` (детерминизъм по seed).
+
+## Документация
+- `README.md` (инсталация, контроли), `ARCHITECTURE.md` (модули, диаграми, алгоритми с
+  Big-O), `DEFENSE.md` (въпроси за защитата), `PROGRESS.md` (история на етапите).
+- При промяна на алгоритъм/архитектура – обнови и `ARCHITECTURE.md`/`DEFENSE.md`.
 
 ## Работен процес
 - Всеки етап: план → код → pytest → headless smoke test → commit `stage N: описание`
