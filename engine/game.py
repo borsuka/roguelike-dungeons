@@ -17,14 +17,24 @@ class Game:
         state: Текущият екран.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, seed: int | None = None) -> None:
         pygame.init()
         pygame.display.set_caption(config.WINDOW_TITLE)
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.renderer = Renderer(self.screen)
         self.running = True
+        self._pending_seed = seed
         self.state: State = MainMenuState(self)
+
+    def take_seed(self) -> int | None:
+        """Seed за следващата нова игра.
+
+        Seed-ът от `--seed` важи само за първата игра; следващите игри (след смърт) са с
+        нови случайни карти – така работи permadeath.
+        """
+        seed, self._pending_seed = self._pending_seed, None
+        return seed
 
     def handle_event(self, event: pygame.event.Event) -> None:
         """Предава събитието на текущия екран и сменя екрана при нужда."""

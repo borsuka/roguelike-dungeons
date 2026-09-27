@@ -62,8 +62,8 @@ def test_wait_consumes_turn_without_moving() -> None:
     assert world.player.position == (2, 2)
 
 
-def test_static_test_world_has_walls_around() -> None:
-    world = World.new_test_world()
+def test_new_game_places_player_on_floor() -> None:
+    world = World.new_game(seed=42)
     game_map = world.game_map
     assert not game_map.is_walkable(0, 0)
     assert game_map.is_walkable(*world.player.position)

@@ -14,6 +14,7 @@ import pygame
 
 import config
 from engine.actions import Action
+from engine.camera import Camera
 from engine.input_handler import Command, key_name, translate_key
 from engine.renderer import Renderer
 from engine.world import World
@@ -96,7 +97,7 @@ class MainMenuState(MenuState):
     def on_select(self, index: int) -> State | None:
         """Стартира нова игра или затваря програмата."""
         if index == 0:
-            return PlayingState(self.game, World.new_test_world())
+            return PlayingState(self.game, World.new_game(self.game.take_seed()))
         self.game.running = False
         return None
 
@@ -112,6 +113,8 @@ class PlayingState(State):
     def __init__(self, game: Game, world: World) -> None:
         super().__init__(game)
         self.world = world
+        self.camera = Camera(config.VIEW_WIDTH_TILES, config.VIEW_HEIGHT_TILES,
+                             world.game_map.width, world.game_map.height)
 
     def handle_event(self, event: pygame.event.Event) -> State | None:
         """Превежда клавиша в действие и го изпълнява."""
@@ -125,6 +128,8 @@ class PlayingState(State):
         return None
 
     def render(self, renderer: Renderer) -> None:
-        """Рисува света."""
+        """Рисува света и панела."""
         renderer.screen.fill(config.COLOR_BLACK)
-        renderer.draw_world(self.world)
+        self.camera.center_on(*self.world.player.position)
+        renderer.draw_world(self.world, self.camera)
+        renderer.draw_panel(self.world)

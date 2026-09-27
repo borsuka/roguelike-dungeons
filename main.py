@@ -2,6 +2,7 @@
 
 Употреба:
     python main.py                 # нормална игра
+    python main.py --seed 12345    # игра с фиксиран seed
     python main.py --smoke 200     # headless smoke test с 200 случайни хода
 """
 
@@ -14,6 +15,7 @@ import os
 def parse_args() -> argparse.Namespace:
     """Разчита аргументите от командния ред."""
     parser = argparse.ArgumentParser(description="Roguelike с процедурно генерирани подземия")
+    parser.add_argument("--seed", type=int, help="seed за генериране (повторима игра)")
     parser.add_argument("--smoke", type=int, metavar="N",
                         help="headless smoke test с N случайни натискания")
     return parser.parse_args()
@@ -28,13 +30,13 @@ def main() -> None:
         os.environ["SDL_VIDEODRIVER"] = "dummy"
         from engine.smoke import run_smoke
 
-        report = run_smoke(args.smoke)
+        report = run_smoke(args.smoke, seed=args.seed or 0)
         print(f"Smoke test OK: {report}")
         return
 
     from engine.game import Game
 
-    Game().run()
+    Game(seed=args.seed).run()
 
 
 if __name__ == "__main__":

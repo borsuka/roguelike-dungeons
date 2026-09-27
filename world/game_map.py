@@ -6,6 +6,7 @@ from collections.abc import Iterator
 
 from entities.entity import Entity
 from world import tile
+from world.generators.base import GenerationResult, Rect
 from world.tile import TileType
 
 
@@ -27,6 +28,21 @@ class GameMap:
         self.height = height
         self.tiles: list[list[TileType]] = [[fill] * height for _ in range(width)]
         self.entities: list[Entity] = []
+        self.rooms: list[Rect] = []
+        self.player_start: tuple[int, int] = (width // 2, height // 2)
+        self.stairs: tuple[int, int] | None = None
+        self.start_area: set[tuple[int, int]] = set()
+
+    @classmethod
+    def from_generation(cls, result: GenerationResult) -> GameMap:
+        """Създава карта от резултата на генератор."""
+        game_map = cls(result.width, result.height)
+        game_map.tiles = [list(column) for column in result.tiles]
+        game_map.rooms = list(result.rooms)
+        game_map.player_start = result.player_start
+        game_map.stairs = result.stairs
+        game_map.start_area = set(result.start_area)
+        return game_map
 
     # ------------------------------------------------------------------ тайлове
     def in_bounds(self, x: int, y: int) -> bool:

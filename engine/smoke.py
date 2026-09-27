@@ -46,7 +46,7 @@ def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
         Кратък отчет.
     """
     chooser = random.Random(seed)
-    game = Game()
+    game = Game(seed=seed)
     games_started = 0
     for _ in range(steps):
         if not isinstance(game.state, PlayingState):
