@@ -1,0 +1,24 @@
+# Виртуална среда
+.venv/
+venv/
+env/
+
+# Python кеш
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Инструменти
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Редактори / ОС
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Рекордите се създават при игра – не ги версионираме
+data/highscores.json
