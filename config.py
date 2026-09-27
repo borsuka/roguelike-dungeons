@@ -1,0 +1,81 @@
+"""Централна конфигурация на играта.
+
+Тук са ВСИЧКИ константи: размери, цветове, клавиши и баланс. Модулът не импортира pygame,
+затова може да се ползва и от логическите модули, и от тестовете.
+"""
+
+from __future__ import annotations
+
+Color = tuple[int, int, int]
+
+# ---------------------------------------------------------------------------
+# Прозорец и рендериране
+# ---------------------------------------------------------------------------
+WINDOW_TITLE = "Roguelike – Подземията на краля"
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+FPS = 60
+
+TILE_SIZE = 32
+PANEL_HEIGHT = 144  # долният панел с HUD и лог
+
+# Колко тайла се виждат на екрана (камерата показва този "прозорец" от картата).
+VIEW_WIDTH_TILES = SCREEN_WIDTH // TILE_SIZE
+VIEW_HEIGHT_TILES = (SCREEN_HEIGHT - PANEL_HEIGHT) // TILE_SIZE
+
+FONT_SIZE_TILE = 30
+FONT_SIZE_UI = 20
+FONT_SIZE_MENU = 28
+FONT_SIZE_TITLE = 56
+
+# ---------------------------------------------------------------------------
+# Карта
+# ---------------------------------------------------------------------------
+MAP_WIDTH = 80
+MAP_HEIGHT = 45
+
+# ---------------------------------------------------------------------------
+# Цветове (R, G, B)
+# ---------------------------------------------------------------------------
+COLOR_BLACK: Color = (0, 0, 0)
+COLOR_WHITE: Color = (255, 255, 255)
+COLOR_GRAY: Color = (128, 128, 128)
+COLOR_TITLE: Color = (255, 200, 60)
+COLOR_MENU_TEXT: Color = (220, 220, 220)
+COLOR_MENU_SELECTED: Color = (255, 220, 90)
+COLOR_PANEL_BG: Color = (18, 18, 26)
+COLOR_PANEL_BORDER: Color = (70, 70, 90)
+
+COLOR_PLAYER: Color = (255, 255, 255)
+
+# Тайлове: (цвят на фона, цвят на символа) – светли (видими) и тъмни (изследвани).
+COLOR_WALL_LIGHT_BG: Color = (110, 90, 60)
+COLOR_WALL_LIGHT_FG: Color = (160, 140, 100)
+COLOR_WALL_DARK_BG: Color = (40, 36, 48)
+COLOR_WALL_DARK_FG: Color = (65, 60, 75)
+COLOR_FLOOR_LIGHT_BG: Color = (60, 55, 45)
+COLOR_FLOOR_LIGHT_FG: Color = (110, 100, 80)
+COLOR_FLOOR_DARK_BG: Color = (22, 22, 32)
+COLOR_FLOOR_DARK_FG: Color = (45, 45, 60)
+COLOR_STAIRS_LIGHT_FG: Color = (255, 255, 120)
+COLOR_STAIRS_DARK_FG: Color = (110, 110, 60)
+
+# ---------------------------------------------------------------------------
+# Клавиши (имена както ги връща pygame.key.name; главни букви – чрез event.unicode)
+# ---------------------------------------------------------------------------
+MOVE_KEYS: dict[str, tuple[int, int]] = {
+    # стрелки
+    "up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0),
+    "home": (-1, -1), "page up": (1, -1), "end": (-1, 1), "page down": (1, 1),
+    # WASD + диагонали Q/E/Z/C
+    "w": (0, -1), "s": (0, 1), "a": (-1, 0), "d": (1, 0),
+    "q": (-1, -1), "e": (1, -1), "z": (-1, 1), "c": (1, 1),
+    # numpad
+    "[8]": (0, -1), "[2]": (0, 1), "[4]": (-1, 0), "[6]": (1, 0),
+    "[7]": (-1, -1), "[9]": (1, -1), "[1]": (-1, 1), "[3]": (1, 1),
+}
+WAIT_KEYS: frozenset[str] = frozenset({".", "space", "[5]"})
+CONFIRM_KEYS: frozenset[str] = frozenset({"return", "enter"})
+ESCAPE_KEY = "escape"
+MENU_UP_KEYS: frozenset[str] = frozenset({"up", "w", "[8]"})
+MENU_DOWN_KEYS: frozenset[str] = frozenset({"down", "s", "[2]"})

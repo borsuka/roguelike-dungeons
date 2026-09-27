@@ -1,0 +1,40 @@
+"""Превръщане на натиснат клавиш в действие (Action) или команда за интерфейса."""
+
+from __future__ import annotations
+
+from enum import Enum, auto
+
+import pygame
+
+import config
+from engine.actions import Action, MoveAction, WaitAction
+from entities.entity import Entity
+
+
+class Command(Enum):
+    """Команди, които не са ход в играта, а смяна на екран."""
+
+    PAUSE = auto()
+
+
+def key_name(event: pygame.event.Event) -> str:
+    """Името на клавиша (напр. "up", "w", "[8]")."""
+    return pygame.key.name(event.key)
+
+
+def translate_key(event: pygame.event.Event, player: Entity) -> Action | Command | None:
+    """Връща действието/командата за натиснатия клавиш или None.
+
+    Args:
+        event: pygame KEYDOWN събитие.
+        player: Играчът, който ще извърши действието.
+    """
+    name = key_name(event)
+    if name == config.ESCAPE_KEY:
+        return Command.PAUSE
+    if name in config.MOVE_KEYS:
+        dx, dy = config.MOVE_KEYS[name]
+        return MoveAction(player, dx, dy)
+    if name in config.WAIT_KEYS:
+        return WaitAction(player)
+    return None
