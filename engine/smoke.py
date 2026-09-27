@@ -18,8 +18,11 @@ from engine.states import PlayingState
 SMOKE_KEYS: list[tuple[int, str]] = [
     (pygame.K_UP, ""), (pygame.K_DOWN, ""), (pygame.K_LEFT, ""), (pygame.K_RIGHT, ""),
     (pygame.K_q, "q"), (pygame.K_e, "e"), (pygame.K_z, "z"), (pygame.K_c, "c"),
-    (pygame.K_PERIOD, "."),
+    (pygame.K_PERIOD, "."), (pygame.K_PERIOD, ">"),
 ]
+
+
+DESCEND_CHANCE = 0.03  # шанс на стъпка smoke тестът да слезе по стълбите
 
 
 @dataclass
@@ -28,6 +31,7 @@ class SmokeReport:
 
     steps: int
     games_started: int
+    max_floor: int
 
 
 def key_event(key: int, unicode: str = "") -> pygame.event.Event:
@@ -48,14 +52,23 @@ def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
     chooser = random.Random(seed)
     game = Game(seed=seed)
     games_started = 0
+    max_floor = 0
     for _ in range(steps):
         if not isinstance(game.state, PlayingState):
             # Във всеки не-игрови екран натискаме Enter (напр. "Нова игра").
             game.handle_event(key_event(pygame.K_RETURN, "\r"))
             games_started += isinstance(game.state, PlayingState)
             continue
-        key, char = chooser.choice(SMOKE_KEYS)
+        world = game.state.world
+        if chooser.random() < DESCEND_CHANCE and world.game_map.stairs is not None:
+            # Случайното ходене рядко стига до стълбите, затова понякога "телепортираме"
+            # играча там – така тестът минава и през генерирането на нови етажи.
+            world.player.place(*world.game_map.stairs)
+            key, char = pygame.K_PERIOD, ">"
+        else:
+            key, char = chooser.choice(SMOKE_KEYS)
         game.handle_event(key_event(key, char))
         game.render()
+        max_floor = max(max_floor, world.floor)
     pygame.quit()
-    return SmokeReport(steps=steps, games_started=games_started)
+    return SmokeReport(steps=steps, games_started=games_started, max_floor=max_floor)

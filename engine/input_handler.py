@@ -7,7 +7,7 @@ from enum import Enum, auto
 import pygame
 
 import config
-from engine.actions import Action, MoveAction, WaitAction
+from engine.actions import Action, DescendAction, MoveAction, WaitAction
 from entities.entity import Entity
 
 
@@ -30,6 +30,9 @@ def translate_key(event: pygame.event.Event, player: Entity) -> Action | Command
         player: Играчът, който ще извърши действието.
     """
     name = key_name(event)
+    # ">" е Shift + "." – проверяваме символа преди името на клавиша.
+    if event.unicode == config.DESCEND_CHAR or name in config.CONFIRM_KEYS:
+        return DescendAction(player)
     if name == config.ESCAPE_KEY:
         return Command.PAUSE
     if name in config.MOVE_KEYS:

@@ -78,6 +78,7 @@ MOVE_KEYS: dict[str, tuple[int, int]] = {
 WAIT_KEYS: frozenset[str] = frozenset({".", "space", "[5]"})
 CONFIRM_KEYS: frozenset[str] = frozenset({"return", "enter"})
 ESCAPE_KEY = "escape"
+DESCEND_CHAR = ">"
 MENU_UP_KEYS: frozenset[str] = frozenset({"up", "w", "[8]"})
 MENU_DOWN_KEYS: frozenset[str] = frozenset({"down", "s", "[2]"})
 
@@ -97,3 +98,14 @@ BSP_ASPECT_RATIO = 1.25      # над това съотношение режем
 BSP_ROOM_MIN_SIZE = 5
 BSP_ROOM_MAX_SIZE = 14
 BSP_ROOM_MARGIN = 1          # отстъп на стаята от ръба на листото
+
+# ---------------------------------------------------------------------------
+# Cellular Automata генератор
+# ---------------------------------------------------------------------------
+CA_WALL_PROBABILITY = 0.45       # начален процент стени
+CA_ITERATIONS = 5                # брой итерации на правилото
+CA_EMPTY_FILL_ITERATIONS = 2     # в първите N итерации "0 стени" също дава стена
+CA_WALL_THRESHOLD = 5            # ≥ толкова стени в 3x3 → стена
+CA_MIN_FLOOR_RATIO = 0.40        # най-големият регион трябва да е ≥ 40% от площта
+CA_MAX_ATTEMPTS = 100            # максимум опити, преди да се откажем
+CA_SAFE_RADIUS = 6               # радиус без врагове около старта в пещера

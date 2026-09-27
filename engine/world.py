@@ -6,11 +6,22 @@
 
 from __future__ import annotations
 
+import random
+
 import config
 from entities.entity import Entity, RenderOrder
 from systems import rng
 from world.game_map import GameMap
+from world.generators.base import DungeonGenerator
 from world.generators.bsp import BSPGenerator
+from world.generators.cellular import CellularGenerator
+
+
+def make_generator(floor: int, map_rng: random.Random) -> DungeonGenerator:
+    """Избира генератор според етажа: нечетни – BSP подземия, четни – пещери."""
+    if floor % 2 == 1:
+        return BSPGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
+    return CellularGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
 
 
 def generate_floor(seed: int, floor: int) -> GameMap:
@@ -21,8 +32,7 @@ def generate_floor(seed: int, floor: int) -> GameMap:
         floor: Номер на етажа (от 1).
     """
     map_rng = rng.make_rng(rng.derive_seed(seed, "map", floor))
-    generator = BSPGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
-    return GameMap.from_generation(generator.generate())
+    return GameMap.from_generation(make_generator(floor, map_rng).generate())
 
 
 def create_player() -> Entity:
@@ -62,6 +72,17 @@ class World:
         world = cls(generate_floor(seed, 1), player, seed=seed, floor=1)
         world._place_player()
         return world
+
+    @property
+    def player_on_stairs(self) -> bool:
+        """Дали играчът стои на стълбите надолу."""
+        return self.game_map.stairs == self.player.position
+
+    def descend(self) -> None:
+        """Слиза на следващия етаж: нова карта, играчът – на старта ѝ."""
+        self.floor += 1
+        self.game_map = generate_floor(self.seed, self.floor)
+        self._place_player()
 
     def _place_player(self) -> None:
         """Поставя играча на старта на текущата карта."""

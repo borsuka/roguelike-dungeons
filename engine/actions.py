@@ -47,6 +47,17 @@ class WaitAction(Action):
         return True
 
 
+class DescendAction(Action):
+    """Слизане по стълбите надолу."""
+
+    def perform(self, world: World) -> bool:
+        """Слиза, ако играчът е на стълбите; иначе действието е невалидно."""
+        if not world.player_on_stairs:
+            return False
+        world.descend()
+        return True
+
+
 class ActionWithDirection(Action):
     """Действие с посока (dx, dy)."""
 
