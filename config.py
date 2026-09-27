@@ -25,6 +25,23 @@ PANEL_PADDING = 8
 HUD_WIDTH = 320              # лявата част на панела (статистики); вдясно е логът
 BAR_HEIGHT = 18
 MENU_BOX_WIDTH = 560
+MENU_BOX_ALPHA = 235         # непрозрачност на прозорците с менюта (0–255)
+
+# Разположение на екраните (в пиксели)
+MENU_OPTION_SPACING = 12     # допълнително разстояние между опциите в меню
+MENU_SUBTITLE_OFFSET = 50    # подзаглавието е толкова под заглавието
+HELP_BOTTOM_OFFSET = 110     # помощта за клавишите е толкова над долния ръб
+HELP_LINE_HEIGHT = 22
+FOOTER_BOTTOM_OFFSET = 50    # подсказките "Enter – ..." са толкова над долния ръб
+LOG_TITLE_Y = 30
+LOG_TOP_OFFSET = 40          # първият ред на лога е толкова под горния отстъп
+HIGHSCORE_TITLE_Y = 70
+HIGHSCORE_HEADER_Y = 150
+HIGHSCORE_FIRST_ROW_Y = 195
+HIGHSCORE_ROW_HEIGHT = 34
+END_TITLE_Y = 120
+END_STATS_Y = 220
+END_STATS_LINE_HEIGHT = 40
 
 # Колко тайла се виждат на екрана (камерата показва този "прозорец" от картата).
 VIEW_WIDTH_TILES = SCREEN_WIDTH // TILE_SIZE
@@ -107,6 +124,8 @@ MENU_DOWN_KEYS: frozenset[str] = frozenset({"down", "s", "[2]"})
 # Случайност
 # ---------------------------------------------------------------------------
 SEED_MAX = 2**31 - 1
+SEED_HASH_BYTES = 8          # колко байта от SHA-256 се ползват за производен seed
+SMOKE_DESCEND_CHANCE = 0.03  # smoke тест: шанс на стъпка да слезе по стълбите
 
 # ---------------------------------------------------------------------------
 # BSP генератор

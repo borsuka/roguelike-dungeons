@@ -38,7 +38,7 @@ def new_game(tmp_path: Path) -> Game:
 
 
 def test_smoke_short_session() -> None:
-    report = run_smoke(steps=150, seed=1)
+    report = run_smoke(steps=200, seed=1)  # Definition of Done: 200 случайни хода
     assert report.games_started >= 1
 
 

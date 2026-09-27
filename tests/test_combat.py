@@ -12,10 +12,10 @@ from components.fighter import Fighter
 from engine.actions import BumpAction, MeleeAction, MoveAction, WaitAction
 from engine.turn_manager import TurnManager
 from engine.world import World
-from entities.factories import create_enemy, create_player
+from entities.factories import create_enemy
 from systems.combat import resolve_attack, roll_damage
+from tests.helpers import make_arena
 from world import tile
-from world.game_map import GameMap
 
 
 # ---------------------------------------------------------------------------
@@ -82,17 +82,9 @@ def test_regeneration() -> None:
 # ---------------------------------------------------------------------------
 # Бой в света
 # ---------------------------------------------------------------------------
-def arena(width: int = 10, height: int = 7) -> World:
-    """Празна стая с играч в (2, 3)."""
-    game_map = GameMap(width, height, fill=tile.WALL)
-    for x in range(1, width - 1):
-        for y in range(1, height - 1):
-            game_map.set_tile(x, y, tile.FLOOR)
-    player = create_player(2, 3)
-    game_map.add_entity(player)
-    world = World(game_map, player, seed=123)
-    world.update_fov()
-    return world
+def arena() -> World:
+    """Празна стая 10x7 с играч в (2, 3)."""
+    return make_arena(10, 7, player_pos=(2, 3), seed=123)
 
 
 def test_bump_into_enemy_attacks_instead_of_moving() -> None:
@@ -145,7 +137,7 @@ def test_hostile_ai_chases_visible_player() -> None:
 
 
 def test_hostile_ai_waits_if_player_never_seen() -> None:
-    world = arena(width=20)
+    world = make_arena(20, 7, player_pos=(2, 3))
     world.game_map.set_tile(10, 1, tile.WALL)
     for y in range(1, 6):
         world.game_map.set_tile(10, y, tile.WALL)  # стена разделя стаята

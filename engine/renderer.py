@@ -68,7 +68,8 @@ class Renderer:
                 # неизследваните клетки остават черни
         for entity in sorted(game_map.entities, key=lambda e: e.render_order):
             # Обектите се виждат само в текущото зрително поле.
-            if not camera.is_on_screen(entity.x, entity.y)                     or not game_map.visible[entity.x][entity.y]:
+            on_screen = camera.is_on_screen(entity.x, entity.y)
+            if not on_screen or not game_map.visible[entity.x][entity.y]:
                 continue
             sx, sy = camera.to_screen(entity.x, entity.y)
             t = game_map.tiles[entity.x][entity.y]

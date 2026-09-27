@@ -7,17 +7,13 @@ import pytest
 import config
 from engine.actions import MoveAction
 from engine.world import World
+from tests.helpers import grid_from
 from world.fov import bresenham_line, compute_fov, has_line_of_sight
 
 
 def open_grid(width: int, height: int) -> list[list[bool]]:
     """Изцяло прозрачна карта."""
     return [[True] * height for _ in range(width)]
-
-
-def grid_from(rows: list[str]) -> list[list[bool]]:
-    """'#' = непрозрачно, всичко друго = прозрачно."""
-    return [[rows[y][x] != "#" for y in range(len(rows))] for x in range(len(rows[0]))]
 
 
 def test_origin_is_always_visible() -> None:

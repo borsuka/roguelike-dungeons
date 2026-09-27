@@ -62,6 +62,7 @@ class Fighter:
 
     @hp.setter
     def hp(self, value: int) -> None:
+        """Задава живота, като го ограничава в [0, max_hp]."""
         self._hp = max(0, min(value, self.max_hp))
 
     @property

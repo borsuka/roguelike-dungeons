@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import heapq
 import itertools
-from collections.abc import Collection
+from collections.abc import Collection, Iterator
 
 import config
 
@@ -70,11 +70,8 @@ def find_path(
         if current in closed:
             continue  # остарял запис (намерили сме по-евтин път по-рано)
         closed.add(current)
-        for dx, dy in DIRECTIONS_8:
-            nxt = (current[0] + dx, current[1] + dy)
-            if not (0 <= nxt[0] < width and 0 <= nxt[1] < height):
-                continue
-            if not walkable[nxt[0]][nxt[1]] or nxt in closed:
+        for nxt in walkable_neighbors(walkable, current):
+            if nxt in closed:
                 continue
             step = 1 + (occupied_cost if nxt in occupied and nxt != goal else 0)
             new_g = g_cost[current] + step
@@ -83,6 +80,15 @@ def find_path(
                 came_from[nxt] = current
                 heapq.heappush(open_heap, (new_g + chebyshev(nxt, goal), next(counter), nxt))
     return None
+
+
+def walkable_neighbors(walkable: Grid, point: Point) -> Iterator[Point]:
+    """Проходимите съседи (8 посоки) на клетката в границите на картата."""
+    width, height = len(walkable), len(walkable[0])
+    for dx, dy in DIRECTIONS_8:
+        x, y = point[0] + dx, point[1] + dy
+        if 0 <= x < width and 0 <= y < height and walkable[x][y]:
+            yield x, y
 
 
 def _reconstruct(came_from: dict[Point, Point], current: Point) -> list[Point]:

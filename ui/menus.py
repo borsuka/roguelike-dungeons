@@ -13,6 +13,17 @@ if TYPE_CHECKING:
     from engine.renderer import Renderer
 
 
+def option_lines(options: list[str], selected: int) -> list[tuple[str, Color]]:
+    """Опциите като редове за `draw_menu_box`; избраната е маркирана и оцветена."""
+    lines = []
+    for i, option in enumerate(options):
+        if i == selected:
+            lines.append((f"> {option}", config.COLOR_MENU_SELECTED))
+        else:
+            lines.append((f"  {option}", config.COLOR_MENU_TEXT))
+    return lines
+
+
 def draw_menu_box(renderer: Renderer, title: str, lines: list[tuple[str, Color]],
                   footer: str = "", width: int = config.MENU_BOX_WIDTH) -> None:
     """Центриран полупрозрачен прозорец със заглавие, редове и подсказка отдолу.
@@ -33,7 +44,7 @@ def draw_menu_box(renderer: Renderer, title: str, lines: list[tuple[str, Color]]
     rect.center = (config.SCREEN_WIDTH // 2, (config.SCREEN_HEIGHT - config.PANEL_HEIGHT) // 2)
 
     overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
-    overlay.fill((*config.COLOR_MENU_BOX_BG, 235))
+    overlay.fill((*config.COLOR_MENU_BOX_BG, config.MENU_BOX_ALPHA))
     renderer.screen.blit(overlay, rect.topleft)
     pygame.draw.rect(renderer.screen, config.COLOR_PANEL_BORDER, rect, width=2)
 

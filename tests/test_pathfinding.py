@@ -7,11 +7,7 @@ from collections import deque
 import pytest
 
 from systems.pathfinding import DIRECTIONS_8, chebyshev, find_path
-
-
-def grid_from(rows: list[str]) -> list[list[bool]]:
-    """'#' = стена, всичко друго = проходимо."""
-    return [[rows[y][x] != "#" for y in range(len(rows))] for x in range(len(rows[0]))]
+from tests.helpers import grid_from
 
 
 def bfs_length(grid: list[list[bool]], start: tuple[int, int], goal: tuple[int, int]) -> int:

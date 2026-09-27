@@ -14,22 +14,13 @@ from engine.actions import (
 )
 from engine.turn_manager import TurnManager
 from engine.world import World
-from entities.factories import create_enemy, create_item, create_player
-from world import tile
-from world.game_map import GameMap
+from entities.factories import create_enemy, create_item
+from tests.helpers import make_arena
 
 
-def arena(width: int = 12, height: int = 9) -> World:
-    """Празна стая с играч в (2, 4)."""
-    game_map = GameMap(width, height, fill=tile.WALL)
-    for x in range(1, width - 1):
-        for y in range(1, height - 1):
-            game_map.set_tile(x, y, tile.FLOOR)
-    player = create_player(2, 4)
-    game_map.add_entity(player)
-    world = World(game_map, player, seed=5)
-    world.update_fov()
-    return world
+def arena() -> World:
+    """Празна стая 12x9 с играч в (2, 4)."""
+    return make_arena(12, 9, player_pos=(2, 4), seed=5)
 
 
 def give(world: World, key: str):

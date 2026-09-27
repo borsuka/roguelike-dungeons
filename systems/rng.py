@@ -27,7 +27,7 @@ def derive_seed(base_seed: int, *parts: object) -> int:
     """
     text = ":".join([str(base_seed), *map(str, parts)])
     digest = hashlib.sha256(text.encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") % config.SEED_MAX
+    return int.from_bytes(digest[: config.SEED_HASH_BYTES], "big") % config.SEED_MAX
 
 
 def make_rng(seed: int) -> random.Random:

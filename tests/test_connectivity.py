@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
+from tests.helpers import grid_from
 from world import connectivity
-
-
-def grid_from(rows: list[str]) -> list[list[bool]]:
-    """Прави passable[x][y] от редове текст: '.' = проходимо, '#' = стена."""
-    height, width = len(rows), len(rows[0])
-    return [[rows[y][x] == "." for y in range(height)] for x in range(width)]
 
 
 TWO_ROOMS = [

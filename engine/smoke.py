@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pygame
 
+import config
 from engine.game import Game
 from engine.states import GameOverState, HighScoresState, MainMenuState, State, VictoryState
 from engine.world import World
@@ -31,9 +32,6 @@ SMOKE_KEYS: list[tuple[int, str]] = [
 ENTER_STATES: tuple[type[State], ...] = (
     MainMenuState, GameOverState, VictoryState, HighScoresState,
 )
-
-DESCEND_CHANCE = 0.03  # шанс на стъпка smoke тестът да слезе по стълбите
-
 
 @dataclass
 class SmokeReport:
@@ -87,7 +85,7 @@ def _run_steps(game: Game, chooser: random.Random, steps: int) -> SmokeReport:
             game.render()
             continue
         world = current_world(game.state)
-        if world is not None and chooser.random() < DESCEND_CHANCE \
+        if world is not None and chooser.random() < config.SMOKE_DESCEND_CHANCE \
                 and world.game_map.stairs is not None and world.player.is_alive:
             # Случайното ходене рядко стига до стълбите, затова понякога "телепортираме"
             # играча там – така тестът минава и през генерирането на нови етажи.

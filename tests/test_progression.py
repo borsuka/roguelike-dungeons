@@ -21,22 +21,14 @@ from engine.turn_manager import TurnManager
 from engine.world import World, generate_floor
 from entities.factories import create_enemy, create_player
 from systems.pathfinding import find_path
+from tests.helpers import make_arena
 from world import connectivity, tile
-from world.game_map import GameMap
 from world.spawner import weights_for_floor
 
 
 def arena(width: int = 16, height: int = 9) -> World:
     """Празна стая с играч в (2, 4)."""
-    game_map = GameMap(width, height, fill=tile.WALL)
-    for x in range(1, width - 1):
-        for y in range(1, height - 1):
-            game_map.set_tile(x, y, tile.FLOOR)
-    player = create_player(2, 4)
-    game_map.add_entity(player)
-    world = World(game_map, player, seed=9)
-    world.update_fov()
-    return world
+    return make_arena(width, height, player_pos=(2, 4), seed=9)
 
 
 def add_enemy(world: World, key: str, x: int, y: int):
