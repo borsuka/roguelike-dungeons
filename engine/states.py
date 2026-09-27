@@ -13,16 +13,18 @@ from typing import TYPE_CHECKING
 import pygame
 
 import config
-from engine.actions import Action
+from engine.actions import Action, DropItemAction, UseItemAction
 from engine.camera import Camera
 from engine.input_handler import Command, key_name, translate_key
 from engine.renderer import Renderer
 from engine.turn_manager import TurnManager
 from engine.world import World
 from ui.hud import draw_hud
+from ui.menus import draw_menu_box
 
 if TYPE_CHECKING:
     from engine.game import Game
+    from entities.item import Item
 
 
 class State:
@@ -119,17 +121,26 @@ class PlayingState(State):
         self.camera = Camera(config.VIEW_WIDTH_TILES, config.VIEW_HEIGHT_TILES,
                              world.game_map.width, world.game_map.height)
 
+    def perform(self, action: Action) -> State:
+        """Изиграва ход и връща следващия екран (себе си или край на играта)."""
+        self.turn_manager.play_turn(action)
+        if self.world.game_over:
+            return GameOverState(self.game, self.world)
+        return self
+
     def handle_event(self, event: pygame.event.Event) -> State | None:
-        """Превежда клавиша в действие и го изпълнява."""
+        """Превежда клавиша в действие/команда."""
         if event.type != pygame.KEYDOWN:
             return None
         result = translate_key(event, self.world.player)
         if result is Command.PAUSE:
             return MainMenuState(self.game)
+        if result is Command.INVENTORY:
+            return InventoryState(self.game, self, drop_mode=False)
+        if result is Command.DROP:
+            return InventoryState(self.game, self, drop_mode=True)
         if isinstance(result, Action):
-            self.turn_manager.play_turn(result)
-            if self.world.game_over:
-                return GameOverState(self.game, self.world)
+            return self.perform(result)
         return None
 
     def render(self, renderer: Renderer) -> None:
@@ -138,6 +149,97 @@ class PlayingState(State):
         self.camera.center_on(*self.world.player.position)
         renderer.draw_world(self.world, self.camera)
         draw_hud(renderer, self.world)
+
+
+class InventoryState(State):
+    """Екран с раницата: буква → използвай (или изхвърли) предмета."""
+
+    def __init__(self, game: Game, parent: PlayingState, drop_mode: bool) -> None:
+        super().__init__(game)
+        self.parent = parent
+        self.drop_mode = drop_mode
+
+    @property
+    def items(self) -> list[Item]:
+        """Предметите в раницата на играча."""
+        inventory = self.parent.world.player.inventory
+        return inventory.items if inventory is not None else []
+
+    def handle_event(self, event: pygame.event.Event) -> State | None:
+        """a–z избира предмет; Esc затваря."""
+        if event.type != pygame.KEYDOWN:
+            return None
+        if key_name(event) == config.ESCAPE_KEY:
+            return self.parent
+        index = letter_index(event.unicode)
+        if index is None or index >= len(self.items):
+            return None
+        return self.on_item_selected(self.items[index])
+
+    def on_item_selected(self, item: Item) -> State:
+        """Изхвърля, насочва или използва предмета."""
+        player = self.parent.world.player
+        if self.drop_mode:
+            return self.parent.perform(DropItemAction(player, item))
+        if item.consumable is not None and item.consumable.needs_target:
+            return TargetingState(self.game, self.parent, item)
+        return self.parent.perform(UseItemAction(player, item))
+
+    def render(self, renderer: Renderer) -> None:
+        """Рисува играта и прозорец със списъка."""
+        self.parent.render(renderer)
+        equipment = self.parent.world.player.equipment
+        lines = []
+        for i, item in enumerate(self.items):
+            suffix = " (екипиран)" if equipment and equipment.is_equipped(item) else ""
+            lines.append((f"{chr(ord('a') + i)}) {item.name}{suffix}", item.color))
+        title = "Изхвърли предмет" if self.drop_mode else "Инвентар"
+        draw_menu_box(renderer, title, lines, footer="a–z: избор    Esc: затвори")
+
+
+class TargetingState(State):
+    """Избор на целева клетка с курсор (за свитъка на объркването)."""
+
+    def __init__(self, game: Game, parent: PlayingState, item: Item) -> None:
+        super().__init__(game)
+        self.parent = parent
+        self.item = item
+        world = parent.world
+        enemies = sorted(world.visible_enemies(),
+                         key=lambda e: world.player.distance_to(*e.position))
+        # Курсорът започва върху най-близкия видим враг (ако има такъв).
+        self.cursor = enemies[0].position if enemies else world.player.position
+
+    def handle_event(self, event: pygame.event.Event) -> State | None:
+        """Стрелки мести курсора, Enter потвърждава, Esc отказва."""
+        if event.type != pygame.KEYDOWN:
+            return None
+        name = key_name(event)
+        if name == config.ESCAPE_KEY:
+            return self.parent
+        if name in config.CONFIRM_KEYS:
+            action = UseItemAction(self.parent.world.player, self.item, target=self.cursor)
+            return self.parent.perform(action)
+        if name in config.MOVE_KEYS:
+            dx, dy = config.MOVE_KEYS[name]
+            x, y = self.cursor[0] + dx, self.cursor[1] + dy
+            if self.parent.world.game_map.in_bounds(x, y):
+                self.cursor = (x, y)
+        return None
+
+    def render(self, renderer: Renderer) -> None:
+        """Рисува играта, курсора и подсказка."""
+        self.parent.render(renderer)
+        renderer.draw_cursor(self.parent.camera, *self.cursor)
+        renderer.draw_text("Избери цел: стрелки, Enter – потвърди, Esc – откажи",
+                           (config.PANEL_PADDING, config.PANEL_PADDING), config.COLOR_CURSOR)
+
+
+def letter_index(char: str) -> int | None:
+    """'a' → 0, 'b' → 1, ...; None за всичко друго."""
+    if len(char) == 1 and "a" <= char <= "z":
+        return ord(char) - ord("a")
+    return None
 
 
 class GameOverState(State):

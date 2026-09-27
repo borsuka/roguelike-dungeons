@@ -7,7 +7,7 @@ from enum import Enum, auto
 import pygame
 
 import config
-from engine.actions import Action, BumpAction, DescendAction, WaitAction
+from engine.actions import Action, BumpAction, DescendAction, PickupAction, WaitAction
 from entities.entity import Entity
 
 
@@ -15,6 +15,8 @@ class Command(Enum):
     """Команди, които не са ход в играта, а смяна на екран."""
 
     PAUSE = auto()
+    INVENTORY = auto()
+    DROP = auto()
 
 
 def key_name(event: pygame.event.Event) -> str:
@@ -33,6 +35,13 @@ def translate_key(event: pygame.event.Event, player: Entity) -> Action | Command
     # ">" е Shift + "." – проверяваме символа преди името на клавиша.
     if event.unicode == config.DESCEND_CHAR or name in config.CONFIRM_KEYS:
         return DescendAction(player)
+    # Главно "D" (Shift+d) е изхвърляне; малко "d" остава движение надясно (WASD).
+    if event.unicode == config.DROP_CHAR:
+        return Command.DROP
+    if name == config.INVENTORY_KEY:
+        return Command.INVENTORY
+    if name == config.PICKUP_KEY:
+        return PickupAction(player)
     if name == config.ESCAPE_KEY:
         return Command.PAUSE
     if name in config.MOVE_KEYS:

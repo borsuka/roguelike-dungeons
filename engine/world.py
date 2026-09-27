@@ -96,6 +96,11 @@ class World:
         """Дали играчът стои на стълбите надолу."""
         return self.game_map.stairs == self.player.position
 
+    def visible_enemies(self) -> list[Actor]:
+        """Живите врагове в зрителното поле на играча."""
+        return [a for a in self.game_map.actors
+                if a is not self.player and self.game_map.is_visible(a.x, a.y)]
+
     def update_fov(self) -> None:
         """Преизчислява видимостта от позицията на играча."""
         self.game_map.update_fov(self.player.position, config.FOV_RADIUS)

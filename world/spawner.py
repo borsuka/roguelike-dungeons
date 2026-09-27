@@ -1,4 +1,4 @@
-"""Разполагане на врагове (и по-късно предмети) на етажа според дълбочината."""
+"""Разполагане на врагове и предмети на етажа според дълбочината."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import random
 from typing import TypeVar
 
 import config
-from entities.factories import create_enemy
+from entities.factories import create_enemy, create_item
 from world.game_map import GameMap
 
 T = TypeVar("T")
@@ -67,6 +67,28 @@ def spawn_enemies(game_map: GameMap, floor: int, rng: random.Random) -> int:
     return placed
 
 
+def free_item_cells(game_map: GameMap) -> list[Point]:
+    """Подови клетки без друг предмет и без стълби (предметите могат и в стартовата зона)."""
+    occupied = {item.position for item in game_map.items}
+    return [
+        (x, y) for x in range(game_map.width) for y in range(game_map.height)
+        if game_map.is_free(x, y) and (x, y) != game_map.stairs and (x, y) not in occupied
+    ]
+
+
+def spawn_items(game_map: GameMap, floor: int, rng: random.Random) -> int:
+    """Поставя предмети на етажа. Връща колко са поставени."""
+    maximum = value_for_floor(config.MAX_ITEMS_BY_FLOOR, floor)
+    count = rng.randint(max(1, maximum // 2), maximum)
+    cells = free_item_cells(game_map)
+    rng.shuffle(cells)
+    weights = weights_for_floor(config.ITEM_SPAWN_WEIGHTS, floor)
+    for x, y in cells[:count]:
+        game_map.add_entity(create_item(weighted_choice(weights, rng), x, y))
+    return min(count, len(cells))
+
+
 def populate(game_map: GameMap, floor: int, rng: random.Random) -> None:
     """Попълва етажа със съдържание."""
     spawn_enemies(game_map, floor, rng)
+    spawn_items(game_map, floor, rng)

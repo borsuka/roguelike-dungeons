@@ -12,15 +12,20 @@ from dataclasses import dataclass
 import pygame
 
 from engine.game import Game
-from engine.states import PlayingState
+from engine.states import GameOverState, MainMenuState, State
+from engine.world import World
 
-# Клавиши, от които smoke тестът избира на случаен принцип.
+# Клавиши, от които smoke тестът избира на случаен принцип (код, символ).
 SMOKE_KEYS: list[tuple[int, str]] = [
     (pygame.K_UP, ""), (pygame.K_DOWN, ""), (pygame.K_LEFT, ""), (pygame.K_RIGHT, ""),
     (pygame.K_q, "q"), (pygame.K_e, "e"), (pygame.K_z, "z"), (pygame.K_c, "c"),
-    (pygame.K_PERIOD, "."), (pygame.K_PERIOD, ">"),
+    (pygame.K_UP, ""), (pygame.K_DOWN, ""), (pygame.K_LEFT, ""), (pygame.K_RIGHT, ""),
+    (pygame.K_PERIOD, "."), (pygame.K_PERIOD, ">"), (pygame.K_g, "g"),
+    (pygame.K_i, "i"), (pygame.K_a, "a"), (pygame.K_b, "b"), (pygame.K_d, "D"),
+    (pygame.K_RETURN, "\r"), (pygame.K_ESCAPE, "\x1b"),
 ]
-
+# Екрани, в които smoke тестът просто натиска Enter (за да започне/продължи игра).
+ENTER_STATES: tuple[type[State], ...] = (MainMenuState, GameOverState)
 
 DESCEND_CHANCE = 0.03  # шанс на стъпка smoke тестът да слезе по стълбите
 
@@ -39,12 +44,20 @@ def key_event(key: int, unicode: str = "") -> pygame.event.Event:
     return pygame.event.Event(pygame.KEYDOWN, key=key, unicode=unicode, mod=0)
 
 
+def current_world(state: State) -> World | None:
+    """Светът, който екранът показва (ако има такъв)."""
+    world = getattr(state, "world", None)
+    if world is None and hasattr(state, "parent"):
+        world = getattr(state.parent, "world", None)
+    return world
+
+
 def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
     """Стартира играта и изпълнява `steps` случайни натискания.
 
     Args:
         steps: Брой симулирани натискания на клавиш.
-        seed: Seed за избора на клавиши (за повторимост).
+        seed: Seed за избора на клавиши и за първата игра (за повторимост).
 
     Returns:
         Кратък отчет.
@@ -54,21 +67,24 @@ def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
     games_started = 0
     max_floor = 0
     for _ in range(steps):
-        if not isinstance(game.state, PlayingState):
-            # Във всеки не-игрови екран натискаме Enter (напр. "Нова игра").
+        if isinstance(game.state, ENTER_STATES):
             game.handle_event(key_event(pygame.K_RETURN, "\r"))
-            games_started += isinstance(game.state, PlayingState)
+            games_started += current_world(game.state) is not None
+            game.render()
             continue
-        world = game.state.world
-        if chooser.random() < DESCEND_CHANCE and world.game_map.stairs is not None:
+        world = current_world(game.state)
+        if world is not None and chooser.random() < DESCEND_CHANCE \
+                and world.game_map.stairs is not None and world.player.is_alive:
             # Случайното ходене рядко стига до стълбите, затова понякога "телепортираме"
             # играча там – така тестът минава и през генерирането на нови етажи.
             world.player.place(*world.game_map.stairs)
+            world.update_fov()
             key, char = pygame.K_PERIOD, ">"
         else:
             key, char = chooser.choice(SMOKE_KEYS)
         game.handle_event(key_event(key, char))
         game.render()
-        max_floor = max(max_floor, world.floor)
+        if world is not None:
+            max_floor = max(max_floor, world.floor)
     pygame.quit()
     return SmokeReport(steps=steps, games_started=games_started, max_floor=max_floor)

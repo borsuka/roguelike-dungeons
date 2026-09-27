@@ -8,7 +8,7 @@
 | 3 | Cellular Automata | ✅ завършен |
 | 4 | FOV и камера | ✅ завършен |
 | 5 | Врагове и бой | ✅ завършен |
-| 6 | Предмети и инвентар | ⏳ предстои |
+| 6 | Предмети и инвентар | ✅ завършен |
 | 7 | Прогресия и съдържание | ⏳ предстои |
 | 8 | UI и полиране | ⏳ предстои |
 | 9 | Тестове и качество | ⏳ предстои |
@@ -72,6 +72,21 @@
 - `world/spawner.py` – претеглен избор по етаж (засега плъх и гоблин), не в стартовата зона.
 - `GameOverState` при смърт.
 - Тестове: `test_pathfinding.py`, `test_combat.py`, `test_message_log.py` (149 общо).
+
+## Етап 6
+- `entities/item.py` – `Item(Entity)` с компонент `consumable` или `equippable`.
+- Нови модули (не са в оригиналната схема): `components/consumable.py`
+  (`HealingConsumable`, `LightningConsumable`, `ConfusionConsumable`) и
+  `components/equippable.py` (`EquipmentSlot`, `Equippable`).
+- `components/inventory.py` (капацитет 20), `components/equipment.py` (оръжие + броня;
+  `Fighter` пита `equipment.bonus(stat)` → статистиките винаги са актуални).
+- `ConfusedAI` (decorator около истинския AI; връща го след N хода).
+- Действия: `PickupAction` (G), `UseItemAction`, `EquipAction`, `DropItemAction` (Shift+D).
+- Екрани: `InventoryState` (I / Shift+D), `TargetingState` (курсор за свитъка на объркването).
+- Всички 10 предмета от раздел 8 са в `config.ITEMS`; spawner-ът разполага и предмети.
+- Решение за клавишите: малко `d` е движение (WASD), главно `D` (Shift+D) е изхвърляне.
+- Тестове: `test_inventory.py` (капацитет, вдигане, изхвърляне, лечението не надвишава
+  max HP, мълния, объркване, екипировката променя статистиките) – 164 общо.
 
 ## Известни проблеми
 - няма

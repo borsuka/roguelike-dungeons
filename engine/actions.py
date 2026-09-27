@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from engine.world import World
     from entities.actor import Actor
     from entities.entity import Entity
+    from entities.item import Item
+
+Point = tuple[int, int]
 
 
 class Action:
@@ -115,6 +118,90 @@ class BumpAction(ActionWithDirection):
         if world.game_map.get_actor_at(*self.destination) is not None:
             return MeleeAction(self.entity, self.dx, self.dy).perform(world)
         return MoveAction(self.entity, self.dx, self.dy).perform(world)
+
+
+# ---------------------------------------------------------------------------
+# Предмети
+# ---------------------------------------------------------------------------
+class PickupAction(Action):
+    """Вдигане на предмет от земята."""
+
+    def perform(self, world: World) -> bool:
+        """Слага първия предмет под играча в раницата."""
+        actor: Actor = self.entity  # type: ignore[assignment]
+        item = world.game_map.item_at(actor.x, actor.y)
+        if item is None:
+            world.message_log.add("Тук няма нищо за вдигане.", config.COLOR_MSG_IMPOSSIBLE)
+            return False
+        if actor.inventory is None or not actor.inventory.add(item):
+            world.message_log.add("Раницата ти е пълна.", config.COLOR_MSG_IMPOSSIBLE)
+            return False
+        world.game_map.remove_entity(item)
+        world.message_log.add(f"Вдигаш: {item.name}.", config.COLOR_MSG_ITEM)
+        return True
+
+
+class ItemAction(Action):
+    """Действие с конкретен предмет от раницата (и евентуално целева клетка)."""
+
+    def __init__(self, entity: Entity, item: Item, target: Point | None = None) -> None:
+        super().__init__(entity)
+        self.item = item
+        self.target = target
+
+
+class UseItemAction(ItemAction):
+    """Използване: консумативите се изразходват, екипировката се слага/сваля."""
+
+    def perform(self, world: World) -> bool:
+        """Прилага ефекта на предмета."""
+        actor: Actor = self.entity  # type: ignore[assignment]
+        if self.item.equippable is not None:
+            return EquipAction(actor, self.item).perform(world)
+        consumable = self.item.consumable
+        if consumable is None:
+            world.message_log.add("Това не може да се използва.", config.COLOR_MSG_IMPOSSIBLE)
+            return False
+        if not consumable.activate(actor, world, self.target):
+            return False
+        consumable.consume(actor)
+        return True
+
+
+class EquipAction(ItemAction):
+    """Екипиране или сваляне на предмет (превключване)."""
+
+    def perform(self, world: World) -> bool:
+        """Ако е екипиран – сваля го; иначе го слага (и сваля стария в слота)."""
+        actor: Actor = self.entity  # type: ignore[assignment]
+        if actor.equipment is None or self.item.equippable is None:
+            return False
+        if actor.equipment.is_equipped(self.item):
+            actor.equipment.unequip(self.item)
+            world.message_log.add(f"Сваляш: {self.item.name}.", config.COLOR_MSG_ITEM)
+            return True
+        previous = actor.equipment.equip(self.item)
+        if previous is not None:
+            world.message_log.add(f"Сваляш: {previous.name}.", config.COLOR_MSG_ITEM)
+        world.message_log.add(f"Екипираш: {self.item.name}.", config.COLOR_MSG_ITEM)
+        return True
+
+
+class DropItemAction(ItemAction):
+    """Изхвърляне на предмет на земята."""
+
+    def perform(self, world: World) -> bool:
+        """Маха предмета от раницата (и екипировката) и го слага под играча."""
+        actor: Actor = self.entity  # type: ignore[assignment]
+        if actor.inventory is None or self.item not in actor.inventory:
+            return False
+        if actor.equipment is not None:
+            actor.equipment.unequip(self.item)
+        actor.inventory.remove(self.item)
+        self.item.place(actor.x, actor.y)
+        world.game_map.add_entity(self.item)
+        world.message_log.add(f"Изхвърляш: {self.item.name}.", config.COLOR_MSG_ITEM)
+        return True
 
 
 # ---------------------------------------------------------------------------

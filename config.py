@@ -23,6 +23,7 @@ PANEL_HEIGHT = 144  # долният панел с HUD и лог
 PANEL_PADDING = 8
 HUD_WIDTH = 320              # лявата част на панела (статистики); вдясно е логът
 BAR_HEIGHT = 18
+MENU_BOX_WIDTH = 560
 
 # Колко тайла се виждат на екрана (камерата показва този "прозорец" от картата).
 VIEW_WIDTH_TILES = SCREEN_WIDTH // TILE_SIZE
@@ -88,6 +89,9 @@ WAIT_KEYS: frozenset[str] = frozenset({".", "space", "[5]"})
 CONFIRM_KEYS: frozenset[str] = frozenset({"return", "enter"})
 ESCAPE_KEY = "escape"
 DESCEND_CHAR = ">"
+DROP_CHAR = "D"
+INVENTORY_KEY = "i"
+PICKUP_KEY = "g"
 MENU_UP_KEYS: frozenset[str] = frozenset({"up", "w", "[8]"})
 MENU_DOWN_KEYS: frozenset[str] = frozenset({"down", "s", "[2]"})
 
@@ -156,6 +160,11 @@ COLOR_MSG_PLAYER_DIE: Color = (255, 40, 40)
 COLOR_MSG_WELCOME: Color = (120, 180, 255)
 COLOR_MSG_DESCEND: Color = (200, 160, 255)
 COLOR_MSG_IMPOSSIBLE: Color = (140, 140, 140)
+COLOR_MSG_HEAL: Color = (100, 230, 100)
+COLOR_MSG_MAGIC: Color = (190, 140, 255)
+COLOR_MSG_ITEM: Color = (240, 220, 140)
+COLOR_CURSOR: Color = (255, 255, 0)
+COLOR_MENU_BOX_BG: Color = (25, 25, 38)
 
 
 # ---------------------------------------------------------------------------
@@ -190,3 +199,55 @@ ENEMY_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
 }
 # Максимален брой врагове на етаж: {от_етаж: брой}.
 MAX_ENEMIES_BY_FLOOR: dict[int, int] = {1: 5, 3: 7, 5: 9, 7: 11, 9: 13}
+
+
+# ---------------------------------------------------------------------------
+# Предмети
+# ---------------------------------------------------------------------------
+INVENTORY_CAPACITY = 20
+LIGHTNING_RANGE = FOV_RADIUS
+CONFUSION_TURNS = 5
+
+
+@dataclass(frozen=True)
+class ItemDef:
+    """Описание на тип предмет.
+
+    kind: "heal", "lightning", "confusion", "weapon" или "armor".
+    power: количество лечение / щета / ходове объркване / бонус от екипировката.
+    """
+
+    name: str
+    char: str
+    color: Color
+    kind: str
+    power: int
+
+
+ITEMS: dict[str, ItemDef] = {
+    "small_potion": ItemDef("Малка лечебна отвара", "!", (230, 90, 170), "heal", 10),
+    "large_potion": ItemDef("Голяма лечебна отвара", "!", (255, 60, 110), "heal", 25),
+    "lightning_scroll": ItemDef("Свитък на мълнията", "?", (255, 255, 110), "lightning", 20),
+    "confusion_scroll": ItemDef("Свитък на объркването", "?", (190, 130, 255), "confusion",
+                                CONFUSION_TURNS),
+    "dagger": ItemDef("Кама", "/", (170, 210, 230), "weapon", 1),
+    "sword": ItemDef("Меч", "/", (120, 190, 255), "weapon", 3),
+    "axe": ItemDef("Брадва", "/", (90, 140, 255), "weapon", 5),
+    "leather_armor": ItemDef("Кожена броня", "[", (180, 130, 80), "armor", 1),
+    "chain_mail": ItemDef("Ризница", "[", (180, 180, 200), "armor", 3),
+    "plate_armor": ItemDef("Плочеста броня", "[", (230, 230, 255), "armor", 5),
+}
+
+ITEM_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
+    "small_potion": {1: 35, 5: 25},
+    "large_potion": {3: 10, 5: 25},
+    "lightning_scroll": {2: 12, 5: 18},
+    "confusion_scroll": {2: 10, 5: 14},
+    "dagger": {1: 10, 4: 3},
+    "sword": {3: 8, 6: 5},
+    "axe": {6: 6},
+    "leather_armor": {1: 10, 4: 3},
+    "chain_mail": {3: 8, 6: 5},
+    "plate_armor": {6: 6},
+}
+MAX_ITEMS_BY_FLOOR: dict[int, int] = {1: 3, 4: 4, 7: 5}

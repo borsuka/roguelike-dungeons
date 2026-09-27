@@ -6,6 +6,7 @@ from collections.abc import Iterator
 
 from entities.actor import Actor
 from entities.entity import Entity
+from entities.item import Item
 from world import fov, tile
 from world.generators.base import GenerationResult, Rect
 from world.tile import TileType
@@ -109,6 +110,18 @@ class GameMap:
         for actor in self.actors:
             if actor.x == x and actor.y == y:
                 return actor
+        return None
+
+    @property
+    def items(self) -> list[Item]:
+        """Всички предмети на земята."""
+        return [e for e in self.entities if isinstance(e, Item)]
+
+    def item_at(self, x: int, y: int) -> Item | None:
+        """Предметът на (x, y) или None."""
+        for item in self.items:
+            if item.x == x and item.y == y:
+                return item
         return None
 
     def get_blocking_entity_at(self, x: int, y: int) -> Entity | None:

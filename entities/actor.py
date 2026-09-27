@@ -59,3 +59,9 @@ class Actor(Entity):
         self.ai = None
         self.render_order = RenderOrder.CORPSE
         self.name = f"останки от {self.name}"
+
+    def replace_ai(self, ai: BaseAI | None) -> None:
+        """Сменя AI-то (напр. при объркване) и го свързва със собственика."""
+        self.ai = ai
+        if ai is not None:
+            ai.owner = self

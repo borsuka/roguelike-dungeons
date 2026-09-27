@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import config
-from engine.actions import Action, MeleeAction, MoveAction, WaitAction
+from engine.actions import Action, BumpAction, MeleeAction, MoveAction, WaitAction
 from systems import pathfinding
 
 if TYPE_CHECKING:
@@ -103,3 +103,31 @@ class HostileAI(BaseAI):
                 self.last_known = None  # стигнал е мястото, но играча го няма
             return WaitAction(actor)
         return step
+
+
+class ConfusedAI(BaseAI):
+    """Временно състояние: съществото се лута в случайни посоки.
+
+    Обгръща (decorator) истинския AI и го връща след `turns_remaining` хода.
+    Докато е объркан, врагът може да удари и друг враг, ако се блъсне в него.
+
+    Attributes:
+        previous_ai: AI-то, което ще бъде възстановено.
+        turns_remaining: Оставащи ходове объркване.
+    """
+
+    def __init__(self, previous_ai: BaseAI | None, turns: int) -> None:
+        super().__init__()
+        self.previous_ai = previous_ai
+        self.turns_remaining = turns
+
+    def decide(self, world: World) -> Action:
+        """Случайна посока; след изтичане на времето – връща старото AI."""
+        actor = self.actor
+        if self.turns_remaining <= 0:
+            actor.replace_ai(self.previous_ai)
+            world.message_log.add(f"{actor.name} вече не е объркан.", config.COLOR_MSG_MAGIC)
+            return WaitAction(actor)
+        self.turns_remaining -= 1
+        dx, dy = world.rng.choice(pathfinding.DIRECTIONS_8)
+        return BumpAction(actor, dx, dy)

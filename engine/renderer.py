@@ -73,3 +73,12 @@ class Renderer:
             sx, sy = camera.to_screen(entity.x, entity.y)
             t = game_map.tiles[entity.x][entity.y]
             self.draw_cell(sx, sy, entity.char, entity.color, t.light_bg)
+
+    def draw_cursor(self, camera: Camera, map_x: int, map_y: int) -> None:
+        """Рамка около клетка (за избор на цел)."""
+        if not camera.is_on_screen(map_x, map_y):
+            return
+        sx, sy = camera.to_screen(map_x, map_y)
+        size = config.TILE_SIZE
+        pygame.draw.rect(self.screen, config.COLOR_CURSOR,
+                         (sx * size, sy * size, size, size), width=3)
