@@ -91,6 +91,8 @@ class MoveAction(ActionWithDirection):
         if world.game_map.get_blocking_entity_at(dest_x, dest_y) is not None:
             return False
         self.entity.move(self.dx, self.dy)
+        if self.entity is world.player:
+            world.describe_player_tile()
         return True
 
 

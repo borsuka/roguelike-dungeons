@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pygame
 
 import config
@@ -17,13 +19,15 @@ class Game:
         state: Текущият екран.
     """
 
-    def __init__(self, seed: int | None = None) -> None:
+    def __init__(self, seed: int | None = None,
+                 highscore_path: Path = config.HIGHSCORE_PATH) -> None:
         pygame.init()
         pygame.display.set_caption(config.WINDOW_TITLE)
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.renderer = Renderer(self.screen)
         self.running = True
+        self.highscore_path = highscore_path
         self._pending_seed = seed
         self.state: State = MainMenuState(self)
 

@@ -7,12 +7,14 @@
 from __future__ import annotations
 
 import random
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 
 import pygame
 
 from engine.game import Game
-from engine.states import GameOverState, MainMenuState, State, VictoryState
+from engine.states import GameOverState, HighScoresState, MainMenuState, State, VictoryState
 from engine.world import World
 
 # Клавиши, от които smoke тестът избира на случаен принцип (код, символ).
@@ -22,10 +24,13 @@ SMOKE_KEYS: list[tuple[int, str]] = [
     (pygame.K_UP, ""), (pygame.K_DOWN, ""), (pygame.K_LEFT, ""), (pygame.K_RIGHT, ""),
     (pygame.K_PERIOD, "."), (pygame.K_PERIOD, ">"), (pygame.K_g, "g"),
     (pygame.K_i, "i"), (pygame.K_a, "a"), (pygame.K_b, "b"), (pygame.K_d, "D"),
-    (pygame.K_RETURN, "\r"), (pygame.K_ESCAPE, "\x1b"),
+    (pygame.K_RETURN, "\r"), (pygame.K_ESCAPE, "\x1b"), (pygame.K_v, "v"),
+    (pygame.K_PAGEUP, ""),
 ]
 # Екрани, в които smoke тестът просто натиска Enter (за да започне/продължи игра).
-ENTER_STATES: tuple[type[State], ...] = (MainMenuState, GameOverState, VictoryState)
+ENTER_STATES: tuple[type[State], ...] = (
+    MainMenuState, GameOverState, VictoryState, HighScoresState,
+)
 
 DESCEND_CHANCE = 0.03  # шанс на стъпка smoke тестът да слезе по стълбите
 
@@ -63,7 +68,16 @@ def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
         Кратък отчет.
     """
     chooser = random.Random(seed)
-    game = Game(seed=seed)
+    # Рекордите от теста отиват във временна папка, а не в истинската таблица.
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        game = Game(seed=seed, highscore_path=Path(tmp_dir) / "highscores.json")
+        report = _run_steps(game, chooser, steps)
+    pygame.quit()
+    return report
+
+
+def _run_steps(game: Game, chooser: random.Random, steps: int) -> SmokeReport:
+    """Основният цикъл на smoke теста."""
     games_started = 0
     max_floor = 0
     for _ in range(steps):
@@ -84,7 +98,7 @@ def run_smoke(steps: int, seed: int = 0) -> SmokeReport:
             key, char = chooser.choice(SMOKE_KEYS)
         game.handle_event(key_event(key, char))
         game.render()
+        game.running = True  # smoke тестът игнорира "Изход" от менюто за пауза
         if world is not None:
             max_floor = max(max_floor, world.floor)
-    pygame.quit()
     return SmokeReport(steps=steps, games_started=games_started, max_floor=max_floor)

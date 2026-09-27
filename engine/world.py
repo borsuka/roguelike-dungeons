@@ -125,6 +125,15 @@ class World:
         """Преизчислява видимостта от позицията на играча."""
         self.game_map.update_fov(self.player.position, config.FOV_RADIUS)
 
+    def describe_player_tile(self) -> None:
+        """Съобщава какво има под играча (предмет или стълби)."""
+        item = self.game_map.item_at(*self.player.position)
+        if item is not None:
+            self.message_log.add(f"Тук лежи: {item.name}. (G – вдигни)", config.COLOR_MSG_ITEM)
+        if self.player_on_stairs:
+            self.message_log.add("Тук има стълби надолу. (> или Enter – слез)",
+                                 config.COLOR_MSG_DESCEND)
+
     def clear_shot(self, start: tuple[int, int], end: tuple[int, int]) -> bool:
         """Има ли права линия без стени и без други същества между start и end."""
         game_map = self.game_map

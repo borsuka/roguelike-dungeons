@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 Color = tuple[int, int, int]
 
@@ -92,6 +93,13 @@ DESCEND_CHAR = ">"
 DROP_CHAR = "D"
 INVENTORY_KEY = "i"
 PICKUP_KEY = "g"
+LOG_KEY = "v"
+PAGE_UP_KEYS: frozenset[str] = frozenset({"page up", "[9]"})
+PAGE_DOWN_KEYS: frozenset[str] = frozenset({"page down", "[3]"})
+HELP_LINES: tuple[str, ...] = (
+    "Движение/атака: стрелки, WASD+QEZC, numpad    Чакай: . или Space    Вдигни: G",
+    "Инвентар: I    Изхвърли: Shift+D    Слез: > или Enter    Лог: V    Пауза: Esc",
+)
 MENU_UP_KEYS: frozenset[str] = frozenset({"up", "w", "[8]"})
 MENU_DOWN_KEYS: frozenset[str] = frozenset({"down", "s", "[2]"})
 
@@ -286,3 +294,15 @@ ITEM_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
     "plate_armor": {6: 6},
 }
 MAX_ITEMS_BY_FLOOR: dict[int, int] = {1: 4, 4: 5, 7: 6}
+
+
+# ---------------------------------------------------------------------------
+# Рекорди
+# ---------------------------------------------------------------------------
+HIGHSCORE_PATH = Path(__file__).resolve().parent / "data" / "highscores.json"
+HIGHSCORE_LIMIT = 10
+HIGHSCORE_COLUMNS_X: tuple[int, ...] = (240, 340, 440, 530, 620, 720, 830, 960)
+SCORE_PER_FLOOR = 100
+SCORE_PER_KILL = 10
+SCORE_PER_LEVEL = 50
+SCORE_VICTORY_BONUS = 1000

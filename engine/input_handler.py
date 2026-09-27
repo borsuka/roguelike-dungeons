@@ -17,6 +17,7 @@ class Command(Enum):
     PAUSE = auto()
     INVENTORY = auto()
     DROP = auto()
+    SHOW_LOG = auto()
 
 
 def key_name(event: pygame.event.Event) -> str:
@@ -40,6 +41,8 @@ def translate_key(event: pygame.event.Event, player: Entity) -> Action | Command
         return Command.DROP
     if name == config.INVENTORY_KEY:
         return Command.INVENTORY
+    if name == config.LOG_KEY:
+        return Command.SHOW_LOG
     if name == config.PICKUP_KEY:
         return PickupAction(player)
     if name == config.ESCAPE_KEY:
