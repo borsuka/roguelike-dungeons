@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 Color = tuple[int, int, int]
 
 # ---------------------------------------------------------------------------
@@ -19,6 +21,8 @@ FPS = 60
 TILE_SIZE = 32
 PANEL_HEIGHT = 144  # долният панел с HUD и лог
 PANEL_PADDING = 8
+HUD_WIDTH = 320              # лявата част на панела (статистики); вдясно е логът
+BAR_HEIGHT = 18
 
 # Колко тайла се виждат на екрана (камерата показва този "прозорец" от картата).
 VIEW_WIDTH_TILES = SCREEN_WIDTH // TILE_SIZE
@@ -35,6 +39,7 @@ FONT_SIZE_TITLE = 56
 MAP_WIDTH = 80
 MAP_HEIGHT = 45
 FOV_RADIUS = 8
+BOSS_FLOOR = 10              # последният етаж – там е финалният бос
 
 # ---------------------------------------------------------------------------
 # Цветове (R, G, B)
@@ -47,6 +52,9 @@ COLOR_MENU_TEXT: Color = (220, 220, 220)
 COLOR_MENU_SELECTED: Color = (255, 220, 90)
 COLOR_PANEL_BG: Color = (18, 18, 26)
 COLOR_PANEL_BORDER: Color = (70, 70, 90)
+COLOR_HP_BAR_FULL: Color = (60, 170, 60)
+COLOR_HP_BAR_EMPTY: Color = (90, 25, 25)
+COLOR_GAME_OVER: Color = (200, 30, 30)
 
 COLOR_PLAYER: Color = (255, 255, 255)
 
@@ -110,3 +118,75 @@ CA_WALL_THRESHOLD = 5            # ≥ толкова стени в 3x3 → ст
 CA_MIN_FLOOR_RATIO = 0.40        # най-големият регион трябва да е ≥ 40% от площта
 CA_MAX_ATTEMPTS = 100            # максимум опити, преди да се откажем
 CA_SAFE_RADIUS = 6               # радиус без врагове около старта в пещера
+
+# ---------------------------------------------------------------------------
+# Играч
+# ---------------------------------------------------------------------------
+PLAYER_NAME = "Играч"
+PLAYER_CHAR = "@"
+PLAYER_MAX_HP = 30
+PLAYER_ATTACK = 5
+PLAYER_DEFENSE = 1
+
+CORPSE_CHAR = "%"
+COLOR_CORPSE: Color = (140, 20, 20)
+
+# ---------------------------------------------------------------------------
+# Бой и AI
+# ---------------------------------------------------------------------------
+DAMAGE_VARIANCE = 1          # щетата варира с ±1
+CRIT_CHANCE = 0.05           # 5% шанс за критичен удар
+CRIT_MULTIPLIER = 2
+MISS_CHANCE = 0.05           # 5% шанс за пропуск
+AI_MEMORY_TURNS = 5          # колко хода врагът помни къде е видял играча
+PATH_OCCUPIED_COST = 10      # A*: допълнителна цена за клетка, заета от друго същество
+
+# ---------------------------------------------------------------------------
+# Лог на съобщенията
+# ---------------------------------------------------------------------------
+LOG_MAX_MESSAGES = 300
+LOG_PANEL_LINES = 6
+COLOR_MSG_DEFAULT: Color = (220, 220, 220)
+COLOR_MSG_PLAYER_ATTACK: Color = (225, 225, 225)
+COLOR_MSG_ENEMY_ATTACK: Color = (255, 150, 150)
+COLOR_MSG_CRIT: Color = (255, 170, 60)
+COLOR_MSG_MISS: Color = (150, 150, 150)
+COLOR_MSG_ENEMY_DIE: Color = (255, 110, 60)
+COLOR_MSG_PLAYER_DIE: Color = (255, 40, 40)
+COLOR_MSG_WELCOME: Color = (120, 180, 255)
+COLOR_MSG_DESCEND: Color = (200, 160, 255)
+COLOR_MSG_IMPOSSIBLE: Color = (140, 140, 140)
+
+
+# ---------------------------------------------------------------------------
+# Врагове
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class EnemyDef:
+    """Описание на тип враг (данни, не логика)."""
+
+    name: str
+    char: str
+    color: Color
+    hp: int
+    attack: int
+    defense: int
+    xp: int
+    ai: str               # "hostile", "ranged" или "boss"
+    regen: int = 0        # HP на ход
+
+
+ENEMIES: dict[str, EnemyDef] = {
+    "rat": EnemyDef("Плъх", "r", (170, 140, 110), hp=4, attack=2, defense=0, xp=5,
+                    ai="hostile"),
+    "goblin": EnemyDef("Гоблин", "g", (90, 190, 70), hp=10, attack=4, defense=1, xp=20,
+                       ai="hostile"),
+}
+
+# Тегла за спаунване: {име: {от_етаж: тегло}} – важи последният праг ≤ текущия етаж.
+ENEMY_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
+    "rat": {1: 60, 4: 20, 7: 5},
+    "goblin": {1: 35, 3: 45, 6: 30},
+}
+# Максимален брой врагове на етаж: {от_етаж: брой}.
+MAX_ENEMIES_BY_FLOOR: dict[int, int] = {1: 5, 3: 7, 5: 9, 7: 11, 9: 13}

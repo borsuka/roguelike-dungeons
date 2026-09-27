@@ -17,7 +17,9 @@ from engine.actions import Action
 from engine.camera import Camera
 from engine.input_handler import Command, key_name, translate_key
 from engine.renderer import Renderer
+from engine.turn_manager import TurnManager
 from engine.world import World
+from ui.hud import draw_hud
 
 if TYPE_CHECKING:
     from engine.game import Game
@@ -113,6 +115,7 @@ class PlayingState(State):
     def __init__(self, game: Game, world: World) -> None:
         super().__init__(game)
         self.world = world
+        self.turn_manager = TurnManager(world)
         self.camera = Camera(config.VIEW_WIDTH_TILES, config.VIEW_HEIGHT_TILES,
                              world.game_map.width, world.game_map.height)
 
@@ -123,8 +126,10 @@ class PlayingState(State):
         result = translate_key(event, self.world.player)
         if result is Command.PAUSE:
             return MainMenuState(self.game)
-        if isinstance(result, Action) and result.perform(self.world):
-            self.world.update_fov()
+        if isinstance(result, Action):
+            self.turn_manager.play_turn(result)
+            if self.world.game_over:
+                return GameOverState(self.game, self.world)
         return None
 
     def render(self, renderer: Renderer) -> None:
@@ -132,4 +137,35 @@ class PlayingState(State):
         renderer.screen.fill(config.COLOR_BLACK)
         self.camera.center_on(*self.world.player.position)
         renderer.draw_world(self.world, self.camera)
-        renderer.draw_panel(self.world)
+        draw_hud(renderer, self.world)
+
+
+class GameOverState(State):
+    """Екран след смъртта на играча (permadeath – играта не може да продължи)."""
+
+    def __init__(self, game: Game, world: World) -> None:
+        super().__init__(game)
+        self.world = world
+        self.camera = Camera(config.VIEW_WIDTH_TILES, config.VIEW_HEIGHT_TILES,
+                             world.game_map.width, world.game_map.height)
+
+    def handle_event(self, event: pygame.event.Event) -> State | None:
+        """Enter или Esc – към главното меню."""
+        if event.type != pygame.KEYDOWN:
+            return None
+        name = key_name(event)
+        if name in config.CONFIRM_KEYS or name == config.ESCAPE_KEY:
+            return MainMenuState(self.game)
+        return None
+
+    def render(self, renderer: Renderer) -> None:
+        """Рисува замръзналия свят и надпис отгоре."""
+        renderer.screen.fill(config.COLOR_BLACK)
+        self.camera.center_on(*self.world.player.position)
+        renderer.draw_world(self.world, self.camera)
+        draw_hud(renderer, self.world)
+        center_x = config.SCREEN_WIDTH // 2
+        renderer.draw_text("ТИ ЗАГИНА", (center_x, config.SCREEN_HEIGHT // 3),
+                           config.COLOR_GAME_OVER, renderer.title_font, center=True)
+        renderer.draw_text("Enter – главно меню", (center_x, config.SCREEN_HEIGHT // 3 + 60),
+                           config.COLOR_MENU_TEXT, renderer.menu_font, center=True)

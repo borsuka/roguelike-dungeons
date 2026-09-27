@@ -7,7 +7,7 @@ from enum import Enum, auto
 import pygame
 
 import config
-from engine.actions import Action, DescendAction, MoveAction, WaitAction
+from engine.actions import Action, BumpAction, DescendAction, WaitAction
 from entities.entity import Entity
 
 
@@ -37,7 +37,7 @@ def translate_key(event: pygame.event.Event, player: Entity) -> Action | Command
         return Command.PAUSE
     if name in config.MOVE_KEYS:
         dx, dy = config.MOVE_KEYS[name]
-        return MoveAction(player, dx, dy)
+        return BumpAction(player, dx, dy)
     if name in config.WAIT_KEYS:
         return WaitAction(player)
     return None

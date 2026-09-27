@@ -7,7 +7,7 @@
 | 2 | BSP генератор | ✅ завършен |
 | 3 | Cellular Automata | ✅ завършен |
 | 4 | FOV и камера | ✅ завършен |
-| 5 | Врагове и бой | ⏳ предстои |
+| 5 | Врагове и бой | ✅ завършен |
 | 6 | Предмети и инвентар | ⏳ предстои |
 | 7 | Прогресия и съдържание | ⏳ предстои |
 | 8 | UI и полиране | ⏳ предстои |
@@ -57,6 +57,21 @@
   обектите се рисуват само ако са във FOV. Камерата (от Етап 2) следва играча.
 - Тестове: `test_fov.py` (стена блокира, стартът е видим, радиус, симетрия, ръб на картата,
   explored се натрупва).
+
+## Етап 5
+- `components/fighter.py` – HP (винаги в [0, max_hp]), атака/защита като свойства
+  (база + бонуси от екипировка), `take_damage`, `heal`, `regenerate`.
+- `components/ai.py` – `BaseAI`, `HostileAI` (вижда играча → запомня позицията за
+  `AI_MEMORY_TURNS` хода; съседен → `MeleeAction`; иначе стъпка по A*).
+- `entities/actor.py` (композиция), `entities/factories.py`, `EnemyDef` таблица в config.
+- `systems/pathfinding.py` – A* (8 посоки, Chebyshev, heapq, заетите клетки = цена +10).
+- `systems/combat.py` – max(1, атака − защита) ± 1, 5% крит ×2, 5% пропуск.
+- `engine/turn_manager.py` – играч → FOV → всички врагове (регенерация + AI) → FOV.
+- `engine/actions.py` – `MeleeAction`, `BumpAction` (движение или атака).
+- `ui/message_log.py` (обединява повторения), `ui/hud.py` (HP лента, статистики, лог).
+- `world/spawner.py` – претеглен избор по етаж (засега плъх и гоблин), не в стартовата зона.
+- `GameOverState` при смърт.
+- Тестове: `test_pathfinding.py`, `test_combat.py`, `test_message_log.py` (149 общо).
 
 ## Известни проблеми
 - няма

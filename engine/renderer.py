@@ -73,13 +73,3 @@ class Renderer:
             sx, sy = camera.to_screen(entity.x, entity.y)
             t = game_map.tiles[entity.x][entity.y]
             self.draw_cell(sx, sy, entity.char, entity.color, t.light_bg)
-
-    def draw_panel(self, world: World) -> None:
-        """Рисува долния панел (засега само етаж и seed)."""
-        top = config.SCREEN_HEIGHT - config.PANEL_HEIGHT
-        pygame.draw.rect(self.screen, config.COLOR_PANEL_BG,
-                         (0, top, config.SCREEN_WIDTH, config.PANEL_HEIGHT))
-        pygame.draw.line(self.screen, config.COLOR_PANEL_BORDER, (0, top),
-                         (config.SCREEN_WIDTH, top))
-        self.draw_text(f"Етаж: {world.floor}    Seed: {world.seed}",
-                       (config.PANEL_PADDING, top + config.PANEL_PADDING), config.COLOR_MENU_TEXT)

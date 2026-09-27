@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
+from entities.actor import Actor
 from entities.entity import Entity
 from world import fov, tile
 from world.generators.base import GenerationResult, Rect
@@ -97,6 +98,18 @@ class GameMap:
     def entities_at(self, x: int, y: int) -> Iterator[Entity]:
         """Всички обекти на (x, y)."""
         return (e for e in self.entities if e.x == x and e.y == y)
+
+    @property
+    def actors(self) -> list[Actor]:
+        """Всички живи същества на етажа."""
+        return [e for e in self.entities if isinstance(e, Actor) and e.is_alive]
+
+    def get_actor_at(self, x: int, y: int) -> Actor | None:
+        """Живото същество на (x, y) или None."""
+        for actor in self.actors:
+            if actor.x == x and actor.y == y:
+                return actor
+        return None
 
     def get_blocking_entity_at(self, x: int, y: int) -> Entity | None:
         """Обектът, който блокира движение на (x, y), или None."""
