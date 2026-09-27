@@ -61,9 +61,14 @@ class Renderer:
                 if not game_map.in_bounds(x, y):
                     continue
                 t = game_map.tiles[x][y]
-                self.draw_cell(sx, sy, t.char, t.light_fg, t.light_bg)
+                if game_map.visible[x][y]:
+                    self.draw_cell(sx, sy, t.char, t.light_fg, t.light_bg)
+                elif game_map.explored[x][y]:
+                    self.draw_cell(sx, sy, t.char, t.dark_fg, t.dark_bg)
+                # неизследваните клетки остават черни
         for entity in sorted(game_map.entities, key=lambda e: e.render_order):
-            if not camera.is_on_screen(entity.x, entity.y):
+            # Обектите се виждат само в текущото зрително поле.
+            if not camera.is_on_screen(entity.x, entity.y)                     or not game_map.visible[entity.x][entity.y]:
                 continue
             sx, sy = camera.to_screen(entity.x, entity.y)
             t = game_map.tiles[entity.x][entity.y]

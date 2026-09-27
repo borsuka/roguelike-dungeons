@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 from entities.entity import Entity
-from world import tile
+from world import fov, tile
 from world.generators.base import GenerationResult, Rect
 from world.tile import TileType
 
@@ -21,6 +21,8 @@ class GameMap:
         height: Височина в тайлове.
         tiles: 2D масив от TileType.
         entities: Всички обекти на етажа (включително играча).
+        visible: [x][y] – вижда ли се клетката в момента.
+        explored: [x][y] – виждана ли е клетката някога.
     """
 
     def __init__(self, width: int, height: int, fill: TileType = tile.WALL) -> None:
@@ -28,6 +30,8 @@ class GameMap:
         self.height = height
         self.tiles: list[list[TileType]] = [[fill] * height for _ in range(width)]
         self.entities: list[Entity] = []
+        self.visible: list[list[bool]] = [[False] * height for _ in range(width)]
+        self.explored: list[list[bool]] = [[False] * height for _ in range(width)]
         self.rooms: list[Rect] = []
         self.player_start: tuple[int, int] = (width // 2, height // 2)
         self.stairs: tuple[int, int] | None = None
@@ -60,6 +64,17 @@ class GameMap:
     def set_tile(self, x: int, y: int, tile_type: TileType) -> None:
         """Задава тип на тайла на (x, y)."""
         self.tiles[x][y] = tile_type
+
+    def update_fov(self, origin: tuple[int, int], radius: int) -> None:
+        """Преизчислява `visible` от `origin`; видяното се добавя към `explored`."""
+        self.visible = [[False] * self.height for _ in range(self.width)]
+        for x, y in fov.compute_fov(self.transparent_grid(), origin, radius):
+            self.visible[x][y] = True
+            self.explored[x][y] = True
+
+    def is_visible(self, x: int, y: int) -> bool:
+        """Вижда ли се клетката (x, y) в момента."""
+        return self.in_bounds(x, y) and self.visible[x][y]
 
     def walkable_grid(self) -> list[list[bool]]:
         """2D масив [x][y] с проходимостта – вход за BFS и A*."""

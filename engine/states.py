@@ -123,8 +123,8 @@ class PlayingState(State):
         result = translate_key(event, self.world.player)
         if result is Command.PAUSE:
             return MainMenuState(self.game)
-        if isinstance(result, Action):
-            result.perform(self.world)
+        if isinstance(result, Action) and result.perform(self.world):
+            self.world.update_fov()
         return None
 
     def render(self, renderer: Renderer) -> None:

@@ -71,7 +71,12 @@ class World:
         player = create_player()
         world = cls(generate_floor(seed, 1), player, seed=seed, floor=1)
         world._place_player()
+        world.update_fov()
         return world
+
+    def update_fov(self) -> None:
+        """Преизчислява видимостта от позицията на играча."""
+        self.game_map.update_fov(self.player.position, config.FOV_RADIUS)
 
     @property
     def player_on_stairs(self) -> bool:
@@ -83,6 +88,7 @@ class World:
         self.floor += 1
         self.game_map = generate_floor(self.seed, self.floor)
         self._place_player()
+        self.update_fov()
 
     def _place_player(self) -> None:
         """Поставя играча на старта на текущата карта."""
