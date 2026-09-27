@@ -70,13 +70,22 @@ def draw_hud(renderer: Renderer, world: World) -> None:
     renderer.draw_text(f"HP: {fighter.hp}/{fighter.max_hp}", (bar.x + 4, bar.y),
                        config.COLOR_WHITE)
     line = renderer.ui_font.get_linesize()
+    level = world.player.level
+    if level is not None:
+        xp_bar = pygame.Rect(pad, bar.bottom + 4, bar.width, config.BAR_HEIGHT)
+        draw_bar(screen, xp_bar, level.current_xp, level.experience_to_next_level,
+                 config.COLOR_XP_BAR_FULL, config.COLOR_XP_BAR_EMPTY)
+        renderer.draw_text(
+            f"Ниво {level.current_level}   XP: {level.current_xp}/{level.experience_to_next_level}",
+            (xp_bar.x + 4, xp_bar.y), config.COLOR_WHITE)
+        bar = xp_bar
     info = [
-        f"Етаж: {world.floor}    Ход: {world.turn}",
+        f"Етаж: {world.floor}    Ход: {world.turn}    Убити: {world.kills}",
         f"Атака: {fighter.attack}    Защита: {fighter.defense}",
         f"Seed: {world.seed}",
     ]
     for i, text in enumerate(info):
-        renderer.draw_text(text, (pad, bar.bottom + pad + i * line), config.COLOR_MENU_TEXT)
+        renderer.draw_text(text, (pad, bar.bottom + 4 + i * line), config.COLOR_MENU_TEXT)
 
     log_rect = pygame.Rect(config.HUD_WIDTH, top + pad,
                            config.SCREEN_WIDTH - config.HUD_WIDTH - pad,

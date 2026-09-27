@@ -124,8 +124,18 @@ class PlayingState(State):
     def perform(self, action: Action) -> State:
         """Изиграва ход и връща следващия екран (себе си или край на играта)."""
         self.turn_manager.play_turn(action)
-        if self.world.game_over:
-            return GameOverState(self.game, self.world)
+        return self.next_state()
+
+    def next_state(self) -> State:
+        """Край на играта, победа, ново ниво или продължаване на играта."""
+        world = self.world
+        if world.game_over:
+            return GameOverState(self.game, world)
+        if world.victory:
+            return VictoryState(self.game, world)
+        level = world.player.level
+        if level is not None and level.requires_level_up:
+            return LevelUpState(self.game, self)
         return self
 
     def handle_event(self, event: pygame.event.Event) -> State | None:
@@ -235,6 +245,61 @@ class TargetingState(State):
                            (config.PANEL_PADDING, config.PANEL_PADDING), config.COLOR_CURSOR)
 
 
+class LevelUpState(State):
+    """Избор на подобрение при ново ниво (не може да се пропусне с Esc)."""
+
+    def __init__(self, game: Game, parent: PlayingState) -> None:
+        super().__init__(game)
+        self.parent = parent
+        self.selected = 0
+
+    @property
+    def options(self) -> list[str]:
+        """Текстовете на трите избора."""
+        fighter = self.parent.world.player.fighter
+        return [
+            f"Издръжливост: +{config.LEVEL_UP_HP} max HP (сега {fighter.max_hp})",
+            f"Сила: +{config.LEVEL_UP_ATTACK} атака (сега {fighter.attack})",
+            f"Ловкост: +{config.LEVEL_UP_DEFENSE} защита (сега {fighter.defense})",
+        ]
+
+    def handle_event(self, event: pygame.event.Event) -> State | None:
+        """Стрелки + Enter или директно a/b/c."""
+        if event.type != pygame.KEYDOWN:
+            return None
+        name = key_name(event)
+        index = letter_index(event.unicode)
+        if index is not None and index < len(self.options):
+            return self.apply(index)
+        if name in config.MENU_UP_KEYS:
+            self.selected = (self.selected - 1) % len(self.options)
+        elif name in config.MENU_DOWN_KEYS:
+            self.selected = (self.selected + 1) % len(self.options)
+        elif name in config.CONFIRM_KEYS:
+            return self.apply(self.selected)
+        return None
+
+    def apply(self, index: int) -> State:
+        """Прилага избора и продължава (или пита отново при още едно ниво)."""
+        world = self.parent.world
+        level = world.player.level
+        assert level is not None
+        choices = (level.increase_max_hp, level.increase_attack, level.increase_defense)
+        choices[index]()
+        world.message_log.add(f"Ниво {level.current_level}!", config.COLOR_MSG_LEVEL_UP)
+        return self.parent.next_state()
+
+    def render(self, renderer: Renderer) -> None:
+        """Рисува играта и менюто с изборите."""
+        self.parent.render(renderer)
+        lines = []
+        for i, text in enumerate(self.options):
+            color = config.COLOR_MENU_SELECTED if i == self.selected else config.COLOR_MENU_TEXT
+            lines.append((f"{chr(ord('a') + i)}) {text}", color))
+        draw_menu_box(renderer, "Ново ниво! Избери подобрение", lines,
+                      footer="a/b/c или стрелки + Enter")
+
+
 def letter_index(char: str) -> int | None:
     """'a' → 0, 'b' → 1, ...; None за всичко друго."""
     if len(char) == 1 and "a" <= char <= "z":
@@ -271,3 +336,32 @@ class GameOverState(State):
                            config.COLOR_GAME_OVER, renderer.title_font, center=True)
         renderer.draw_text("Enter – главно меню", (center_x, config.SCREEN_HEIGHT // 3 + 60),
                            config.COLOR_MENU_TEXT, renderer.menu_font, center=True)
+
+
+class VictoryState(State):
+    """Екран след победа над боса."""
+
+    def __init__(self, game: Game, world: World) -> None:
+        super().__init__(game)
+        self.world = world
+
+    def handle_event(self, event: pygame.event.Event) -> State | None:
+        """Enter или Esc – към главното меню."""
+        if event.type != pygame.KEYDOWN:
+            return None
+        name = key_name(event)
+        if name in config.CONFIRM_KEYS or name == config.ESCAPE_KEY:
+            return MainMenuState(self.game)
+        return None
+
+    def render(self, renderer: Renderer) -> None:
+        """Надпис за победа."""
+        renderer.screen.fill(config.COLOR_BLACK)
+        center_x = config.SCREEN_WIDTH // 2
+        renderer.draw_text("ПОБЕДА!", (center_x, config.SCREEN_HEIGHT // 3),
+                           config.COLOR_VICTORY, renderer.title_font, center=True)
+        renderer.draw_text("Кралят на подземието е победен.",
+                           (center_x, config.SCREEN_HEIGHT // 3 + 60),
+                           config.COLOR_MENU_TEXT, renderer.menu_font, center=True)
+        renderer.draw_text("Enter – главно меню", (center_x, config.SCREEN_HEIGHT // 3 + 110),
+                           config.COLOR_GRAY, renderer.menu_font, center=True)

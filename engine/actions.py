@@ -120,6 +120,23 @@ class BumpAction(ActionWithDirection):
         return MoveAction(self.entity, self.dx, self.dy).perform(world)
 
 
+class RangedAttackAction(Action):
+    """Изстрел по цел на разстояние (скелет стрелец)."""
+
+    def __init__(self, entity: Entity, target: Actor) -> None:
+        super().__init__(entity)
+        self.target = target
+
+    def perform(self, world: World) -> bool:
+        """Стреля, ако целта е жива и има чиста линия."""
+        attacker: Actor = self.entity  # type: ignore[assignment]
+        if not self.target.is_alive or not world.clear_shot(attacker.position,
+                                                             self.target.position):
+            return False
+        attack_with_message(world, attacker, self.target, ranged=True)
+        return True
+
+
 # ---------------------------------------------------------------------------
 # Предмети
 # ---------------------------------------------------------------------------
@@ -207,10 +224,14 @@ class DropItemAction(ItemAction):
 # ---------------------------------------------------------------------------
 # Помощни функции за бой (ползват се и от свитъците, и от стрелците)
 # ---------------------------------------------------------------------------
-def attack_with_message(world: World, attacker: Actor, target: Actor) -> combat.AttackResult:
+def attack_with_message(world: World, attacker: Actor, target: Actor,
+                        ranged: bool = False) -> combat.AttackResult:
     """Изпълнява атака, записва съобщение и обработва смъртта на целта."""
     result = combat.resolve_attack(attacker.fighter.attack, target.fighter.defense, world.rng)
     text, color = describe_attack(world, attacker, target, result)
+    if ranged:
+        text = f"Стрела! {text}"
+
     world.message_log.add(text, color)
     if not result.missed:
         target.fighter.take_damage(result.damage)

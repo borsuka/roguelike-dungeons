@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 
 import config
@@ -175,3 +176,36 @@ def carve_line(tiles: TileGrid, start: Point, end: Point) -> None:
 def _distance2(a: Point, b: Point) -> int:
     """Квадрат на Евклидовото разстояние (без корен – достатъчно за сравнение)."""
     return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+
+class BossArenaGenerator(BSPGenerator):
+    """Етажът на боса: вляво обикновено BSP подземие, вдясно една голяма зала.
+
+    Коренът се дели ръчно на две: лявата част се дели рекурсивно както обикновено, а
+    дясната остава листо с голямата зала. Свързването е същото като при BSP, така че
+    залата е гарантирано достижима. Стълби няма – целта е да победиш боса.
+    Залата е последната стая в `rooms`.
+    """
+
+    def __init__(self, width: int, height: int, rng: random.Random) -> None:
+        super().__init__(width, height, rng, place_stairs=False)
+
+    def _carve(self) -> tuple[TileGrid, list[Rect]]:
+        """Строи лявото поддърво, залата и коридорите."""
+        tiles = self.new_grid(tile.WALL)
+        cut = int(self.width * config.BOSS_ARENA_SPLIT)
+        left = BSPNode(Rect(0, 0, cut, self.height))
+        right = BSPNode(Rect(cut, 0, self.width - cut, self.height))
+        root = BSPNode(Rect(0, 0, self.width, self.height), left, right)
+        self._split(left, depth=1)
+        self._create_rooms(left, tiles)
+        right.room = self._arena(right.rect)
+        carve_rect(tiles, right.room)
+        self._connect(root, tiles)
+        return tiles, root.rooms()
+
+    def _arena(self, area: Rect) -> Rect:
+        """Голямата зала, центрирана в дясната част."""
+        w = min(config.BOSS_ARENA_WIDTH, area.w - 2 * config.BSP_ROOM_MARGIN)
+        h = min(config.BOSS_ARENA_HEIGHT, area.h - 2 * config.BSP_ROOM_MARGIN)
+        return Rect(area.x + (area.w - w) // 2, area.y + (area.h - h) // 2, w, h)

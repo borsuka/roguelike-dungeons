@@ -11,18 +11,20 @@ import random
 
 import config
 from entities.actor import Actor
-from entities.factories import create_player
-from systems import rng
+from entities.factories import create_enemy, create_player
+from systems import pathfinding, rng
 from ui.message_log import MessageLog
-from world import spawner
+from world import connectivity, fov, spawner
 from world.game_map import GameMap
 from world.generators.base import DungeonGenerator
-from world.generators.bsp import BSPGenerator
+from world.generators.bsp import BossArenaGenerator, BSPGenerator
 from world.generators.cellular import CellularGenerator
 
 
 def make_generator(floor: int, map_rng: random.Random) -> DungeonGenerator:
-    """Избира генератор според етажа: нечетни – BSP подземия, четни – пещери."""
+    """Избира генератор: етажът на боса – арена; нечетни – BSP; четни – пещери."""
+    if floor >= config.BOSS_FLOOR:
+        return BossArenaGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
     if floor % 2 == 1:
         return BSPGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
     return CellularGenerator(config.MAP_WIDTH, config.MAP_HEIGHT, map_rng)
@@ -42,7 +44,21 @@ def generate_floor(seed: int, floor: int) -> GameMap:
     game_map = GameMap.from_generation(make_generator(floor, map_rng).generate())
     spawn_rng = rng.make_rng(rng.derive_seed(seed, "spawn", floor))
     spawner.populate(game_map, floor, spawn_rng)
+    verify_floor(game_map)
     return game_map
+
+
+def verify_floor(game_map: GameMap) -> None:
+    """Задължителна проверка: стълбите и всички предмети са достижими от старта.
+
+    Raises:
+        RuntimeError: Ако нещо е недостижимо (това би било грешка в генератора).
+    """
+    targets = [item.position for item in game_map.items]
+    if game_map.stairs is not None:
+        targets.append(game_map.stairs)
+    if not connectivity.all_reachable(game_map.walkable_grid(), game_map.player_start, targets):
+        raise RuntimeError("Недостижими стълби или предмети на етажа")
 
 
 class World:
@@ -57,6 +73,8 @@ class World:
         message_log: Логът на съобщенията.
         turn: Брой изиграни ходове.
         kills: Брой убити врагове.
+        max_floor: Най-дълбокият достигнат етаж.
+        victory: True, след като босът е победен.
     """
 
     def __init__(self, game_map: GameMap, player: Actor, seed: int = 0, floor: int = 1) -> None:
@@ -68,6 +86,8 @@ class World:
         self.message_log = MessageLog()
         self.turn = 0
         self.kills = 0
+        self.max_floor = floor
+        self.victory = False
 
     @classmethod
     def new_game(cls, seed: int | None = None) -> World:
@@ -105,14 +125,26 @@ class World:
         """Преизчислява видимостта от позицията на играча."""
         self.game_map.update_fov(self.player.position, config.FOV_RADIUS)
 
+    def clear_shot(self, start: tuple[int, int], end: tuple[int, int]) -> bool:
+        """Има ли права линия без стени и без други същества между start и end."""
+        game_map = self.game_map
+        if not fov.has_line_of_sight(game_map.transparent_grid(), start, end):
+            return False
+        between = fov.bresenham_line(start, end)[1:-1]
+        return all(game_map.get_blocking_entity_at(x, y) is None for x, y in between)
+
     # ------------------------------------------------------------------ събития
     def descend(self) -> None:
         """Слиза на следващия етаж: нова карта, играчът – на старта ѝ."""
         self.floor += 1
+        self.max_floor = max(self.max_floor, self.floor)
         self.game_map = generate_floor(self.seed, self.floor)
         self._place_player()
         self.update_fov()
         self.message_log.add(f"Слизаш на етаж {self.floor}.", config.COLOR_MSG_DESCEND)
+        if self.floor >= config.BOSS_FLOOR:
+            self.message_log.add("Усещаш присъствието на Краля на подземието...",
+                                 config.COLOR_MSG_BOSS)
 
     def handle_death(self, actor: Actor) -> None:
         """Обработва смърт: съобщение, статистика, превръщане в труп."""
@@ -122,7 +154,39 @@ class World:
             return
         self.message_log.add(f"{actor.name} умира!", config.COLOR_MSG_ENEMY_DIE)
         self.kills += 1
+        is_boss = actor.kind == config.BOSS_KEY
         actor.become_corpse()
+        self._reward_xp(actor.fighter.xp_reward)
+        if is_boss:
+            self.victory = True
+            self.message_log.add("Кралят на подземието е победен! Ти спечели!",
+                                 config.COLOR_VICTORY)
+
+    def _reward_xp(self, xp: int) -> None:
+        """Дава опит на играча и съобщава за ново ниво."""
+        level = self.player.level
+        if level is None or xp <= 0:
+            return
+        self.message_log.add(f"Получаваш {xp} опит.", config.COLOR_MSG_XP)
+        if level.add_xp(xp):
+            self.message_log.add(f"Достигаш ниво {level.current_level + 1}!",
+                                 config.COLOR_MSG_LEVEL_UP)
+
+    def summon_near(self, summoner: Actor, key: str, count: int) -> int:
+        """Създава до `count` врагове в свободни клетки около `summoner`.
+
+        Returns:
+            Колко са създадени реално (може да няма място).
+        """
+        created = 0
+        for dx, dy in pathfinding.DIRECTIONS_8:
+            if created >= count:
+                break
+            x, y = summoner.x + dx, summoner.y + dy
+            if self.game_map.is_free(x, y):
+                self.game_map.add_entity(create_enemy(key, x, y))
+                created += 1
+        return created
 
     def _place_player(self) -> None:
         """Поставя играча на старта на текущата карта."""

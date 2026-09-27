@@ -111,6 +111,9 @@ BSP_ASPECT_RATIO = 1.25      # над това съотношение режем
 BSP_ROOM_MIN_SIZE = 5
 BSP_ROOM_MAX_SIZE = 14
 BSP_ROOM_MARGIN = 1          # отстъп на стаята от ръба на листото
+BOSS_ARENA_SPLIT = 0.45      # етаж 10: левите 45% са обикновено BSP, вдясно е залата
+BOSS_ARENA_WIDTH = 30
+BOSS_ARENA_HEIGHT = 25
 
 # ---------------------------------------------------------------------------
 # Cellular Automata генератор
@@ -128,12 +131,19 @@ CA_SAFE_RADIUS = 6               # радиус без врагове около
 # ---------------------------------------------------------------------------
 PLAYER_NAME = "Играч"
 PLAYER_CHAR = "@"
-PLAYER_MAX_HP = 30
+PLAYER_MAX_HP = 40
 PLAYER_ATTACK = 5
 PLAYER_DEFENSE = 1
 
 CORPSE_CHAR = "%"
 COLOR_CORPSE: Color = (140, 20, 20)
+
+# Прогресия: XP за следващо ниво = LEVEL_UP_BASE * ниво * LEVEL_UP_FACTOR
+LEVEL_UP_BASE = 35
+LEVEL_UP_FACTOR = 1.5
+LEVEL_UP_HP = 20
+LEVEL_UP_ATTACK = 1
+LEVEL_UP_DEFENSE = 1
 
 # ---------------------------------------------------------------------------
 # Бой и AI
@@ -163,6 +173,12 @@ COLOR_MSG_IMPOSSIBLE: Color = (140, 140, 140)
 COLOR_MSG_HEAL: Color = (100, 230, 100)
 COLOR_MSG_MAGIC: Color = (190, 140, 255)
 COLOR_MSG_ITEM: Color = (240, 220, 140)
+COLOR_MSG_XP: Color = (130, 220, 255)
+COLOR_MSG_LEVEL_UP: Color = (255, 230, 100)
+COLOR_MSG_BOSS: Color = (255, 90, 30)
+COLOR_VICTORY: Color = (255, 215, 0)
+COLOR_XP_BAR_FULL: Color = (70, 130, 220)
+COLOR_XP_BAR_EMPTY: Color = (30, 35, 70)
 COLOR_CURSOR: Color = (255, 255, 0)
 COLOR_MENU_BOX_BG: Color = (25, 25, 38)
 
@@ -190,15 +206,34 @@ ENEMIES: dict[str, EnemyDef] = {
                     ai="hostile"),
     "goblin": EnemyDef("Гоблин", "g", (90, 190, 70), hp=10, attack=4, defense=1, xp=20,
                        ai="hostile"),
+    "skeleton_archer": EnemyDef("Скелет стрелец", "s", (225, 225, 205), hp=8, attack=3,
+                                defense=1, xp=30, ai="ranged"),
+    "orc": EnemyDef("Орк", "o", (210, 120, 60), hp=20, attack=6, defense=3, xp=50,
+                    ai="hostile"),
+    "troll": EnemyDef("Трол", "T", (60, 200, 170), hp=35, attack=8, defense=4, xp=100,
+                      ai="hostile", regen=1),
+    "boss": EnemyDef("Кралят на подземието", "K", (255, 200, 40), hp=80, attack=10,
+                     defense=5, xp=500, ai="boss"),
 }
+BOSS_KEY = "boss"
+BOSS_SUMMON_KEY = "goblin"     # кого призовава босът във втората фаза
+BOSS_SUMMON_COUNT = 2
+BOSS_PHASE_TWO_RATIO = 0.5     # под 50% HP → втора фаза
+BOSS_ENRAGE_ATTACK = 2         # бонус атака във втората фаза
+
+RANGED_MIN_DISTANCE = 3        # стрелецът държи дистанция 3–5
+RANGED_MAX_DISTANCE = 5
 
 # Тегла за спаунване: {име: {от_етаж: тегло}} – важи последният праг ≤ текущия етаж.
 ENEMY_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
     "rat": {1: 60, 4: 20, 7: 5},
-    "goblin": {1: 35, 3: 45, 6: 30},
+    "goblin": {1: 35, 3: 45, 6: 30, 8: 20},
+    "skeleton_archer": {3: 20, 6: 25},
+    "orc": {4: 20, 6: 35, 8: 40},
+    "troll": {7: 15, 9: 30},
 }
 # Максимален брой врагове на етаж: {от_етаж: брой}.
-MAX_ENEMIES_BY_FLOOR: dict[int, int] = {1: 5, 3: 7, 5: 9, 7: 11, 9: 13}
+MAX_ENEMIES_BY_FLOOR: dict[int, int] = {1: 5, 3: 7, 5: 9, 7: 11, 9: 13, 10: 4}
 
 
 # ---------------------------------------------------------------------------
@@ -250,4 +285,4 @@ ITEM_SPAWN_WEIGHTS: dict[str, dict[int, int]] = {
     "chain_mail": {3: 8, 6: 5},
     "plate_armor": {6: 6},
 }
-MAX_ITEMS_BY_FLOOR: dict[int, int] = {1: 3, 4: 4, 7: 5}
+MAX_ITEMS_BY_FLOOR: dict[int, int] = {1: 4, 4: 5, 7: 6}

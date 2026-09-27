@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import config
-from components.ai import BaseAI, HostileAI
+from components.ai import BaseAI, BossAI, HostileAI, RangedAI
 from components.consumable import (
     ConfusionConsumable,
     Consumable,
@@ -18,6 +18,7 @@ from components.equipment import Equipment
 from components.equippable import EquipmentSlot, Equippable
 from components.fighter import Fighter
 from components.inventory import Inventory
+from components.level import Level
 from entities.actor import Actor
 from entities.item import Item
 
@@ -26,13 +27,17 @@ def create_player(x: int = 0, y: int = 0) -> Actor:
     """Създава играча."""
     fighter = Fighter(config.PLAYER_MAX_HP, config.PLAYER_ATTACK, config.PLAYER_DEFENSE)
     return Actor(x, y, config.PLAYER_CHAR, config.COLOR_PLAYER, config.PLAYER_NAME, fighter,
-                 inventory=Inventory(), equipment=Equipment())
+                 inventory=Inventory(), equipment=Equipment(), level=Level())
 
 
 def make_ai(kind: str) -> BaseAI:
     """AI по име от таблицата с врагове."""
     if kind == "hostile":
         return HostileAI()
+    if kind == "ranged":
+        return RangedAI()
+    if kind == "boss":
+        return BossAI()
     raise ValueError(f"Непознат тип AI: {kind}")
 
 
@@ -41,7 +46,9 @@ def create_enemy(key: str, x: int, y: int) -> Actor:
     data = config.ENEMIES[key]
     fighter = Fighter(data.hp, data.attack, data.defense, xp_reward=data.xp,
                       regen_per_turn=data.regen)
-    return Actor(x, y, data.char, data.color, data.name, fighter, ai=make_ai(data.ai))
+    enemy = Actor(x, y, data.char, data.color, data.name, fighter, ai=make_ai(data.ai))
+    enemy.kind = key
+    return enemy
 
 
 def make_consumable(data: config.ItemDef) -> Consumable:

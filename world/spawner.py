@@ -60,11 +60,9 @@ def spawn_enemies(game_map: GameMap, floor: int, rng: random.Random) -> int:
     cells = free_spawn_cells(game_map)
     rng.shuffle(cells)
     weights = weights_for_floor(config.ENEMY_SPAWN_WEIGHTS, floor)
-    placed = 0
     for x, y in cells[:count]:
         game_map.add_entity(create_enemy(weighted_choice(weights, rng), x, y))
-        placed += 1
-    return placed
+    return min(count, len(cells))
 
 
 def free_item_cells(game_map: GameMap) -> list[Point]:
@@ -88,7 +86,15 @@ def spawn_items(game_map: GameMap, floor: int, rng: random.Random) -> int:
     return min(count, len(cells))
 
 
+def spawn_boss(game_map: GameMap) -> None:
+    """Поставя боса в центъра на голямата зала (последната стая)."""
+    x, y = game_map.rooms[-1].center
+    game_map.add_entity(create_enemy(config.BOSS_KEY, x, y))
+
+
 def populate(game_map: GameMap, floor: int, rng: random.Random) -> None:
-    """Попълва етажа със съдържание."""
+    """Попълва етажа със съдържание (на последния етаж – и боса)."""
+    if floor >= config.BOSS_FLOOR:
+        spawn_boss(game_map)
     spawn_enemies(game_map, floor, rng)
     spawn_items(game_map, floor, rng)

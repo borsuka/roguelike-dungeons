@@ -10,7 +10,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import config
-from engine.actions import Action, BumpAction, MeleeAction, MoveAction, WaitAction
+from engine.actions import (
+    Action,
+    BumpAction,
+    MeleeAction,
+    MoveAction,
+    RangedAttackAction,
+    WaitAction,
+)
 from systems import pathfinding
 
 if TYPE_CHECKING:
@@ -131,3 +138,73 @@ class ConfusedAI(BaseAI):
         self.turns_remaining -= 1
         dx, dy = world.rng.choice(pathfinding.DIRECTIONS_8)
         return BumpAction(actor, dx, dy)
+
+
+class RangedAI(HostileAI):
+    """Стрелец: държи дистанция и стреля по права линия.
+
+    - твърде близо (< RANGED_MIN_DISTANCE) → отстъпва (ако може);
+    - в обхват и с чиста линия → стреля;
+    - иначе → приближава се като HostileAI.
+    """
+
+    def decide(self, world: World) -> Action:
+        """Решение според разстоянието до играча."""
+        actor, player = self.actor, world.player
+        sees_player = self.update_memory(world)
+        if self.last_known is None:
+            return WaitAction(actor)
+        if sees_player:
+            distance = actor.distance_to(*player.position)
+            if distance < config.RANGED_MIN_DISTANCE:
+                retreat = self.retreat_step(world)
+                if retreat is not None:
+                    return retreat
+                if distance <= 1:
+                    return MeleeAction(actor, player.x - actor.x, player.y - actor.y)
+            if distance <= config.RANGED_MAX_DISTANCE \
+                    and world.clear_shot(actor.position, player.position):
+                return RangedAttackAction(actor, player)
+        return self.step_towards(world, self.last_known) or WaitAction(actor)
+
+    def retreat_step(self, world: World) -> Action | None:
+        """Ход към съседна свободна клетка, която е по-далеч от играча."""
+        actor, player = self.actor, world.player
+        best, best_distance = None, actor.distance_to(*player.position)
+        for dx, dy in pathfinding.DIRECTIONS_8:
+            x, y = actor.x + dx, actor.y + dy
+            distance = pathfinding.chebyshev((x, y), player.position)
+            if distance > best_distance and world.game_map.is_free(x, y):
+                best, best_distance = (dx, dy), distance
+        if best is None:
+            return None
+        return MoveAction(actor, *best)
+
+
+class BossAI(HostileAI):
+    """Финалният бос: две фази.
+
+    Фаза 1 – преследва като HostileAI. Когато HP падне под половината, веднъж
+    преминава във фаза 2: призовава гоблини и получава бонус атака.
+
+    Attributes:
+        phase: Текущата фаза (1 или 2).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.phase = 1
+
+    def decide(self, world: World) -> Action:
+        """Проверява за смяна на фазата, после се държи като HostileAI."""
+        actor = self.actor
+        fighter = actor.fighter
+        if self.phase == 1 and fighter.hp < fighter.max_hp * config.BOSS_PHASE_TWO_RATIO:
+            self.phase = 2
+            fighter.base_attack += config.BOSS_ENRAGE_ATTACK
+            summoned = world.summon_near(actor, config.BOSS_SUMMON_KEY, config.BOSS_SUMMON_COUNT)
+            world.message_log.add(
+                f"{actor.name} изревава и призовава {summoned} гоблина! Яростта му расте.",
+                config.COLOR_MSG_BOSS)
+            return WaitAction(actor)  # призоваването отнема хода
+        return super().decide(world)

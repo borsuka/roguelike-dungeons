@@ -38,6 +38,7 @@ class Actor(Entity):
         super().__init__(x, y, char, color, name, blocks_movement=True,
                          render_order=RenderOrder.ACTOR)
         self.fighter = fighter
+        self.kind = ""  # ключ от config.ENEMIES ("goblin", "boss"...); празен за играча
         self.ai = ai
         self.inventory = inventory
         self.equipment = equipment

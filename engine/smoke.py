@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import pygame
 
 from engine.game import Game
-from engine.states import GameOverState, MainMenuState, State
+from engine.states import GameOverState, MainMenuState, State, VictoryState
 from engine.world import World
 
 # Клавиши, от които smoke тестът избира на случаен принцип (код, символ).
@@ -25,7 +25,7 @@ SMOKE_KEYS: list[tuple[int, str]] = [
     (pygame.K_RETURN, "\r"), (pygame.K_ESCAPE, "\x1b"),
 ]
 # Екрани, в които smoke тестът просто натиска Enter (за да започне/продължи игра).
-ENTER_STATES: tuple[type[State], ...] = (MainMenuState, GameOverState)
+ENTER_STATES: tuple[type[State], ...] = (MainMenuState, GameOverState, VictoryState)
 
 DESCEND_CHANCE = 0.03  # шанс на стъпка smoke тестът да слезе по стълбите
 
